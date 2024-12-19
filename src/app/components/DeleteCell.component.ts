@@ -8,7 +8,8 @@ import { MatIconModule } from '@angular/material/icon';
 @Component({
     selector: 'app-delete-cell',
     imports: [MatIconModule],
-    templateUrl: './DeleteCell.component.html'
+    templateUrl: './DeleteCell.component.html',
+    styleUrls: ['./DeleteCell.component.scss']
 })
 export class DeleteCell implements ICellRendererAngularComp {
     params?: ICellRendererParams<EmployeeData>;

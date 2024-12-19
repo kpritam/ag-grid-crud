@@ -1,0 +1,15 @@
+:host {
+    height: inherit;
+    display: flex;
+    align-items: center;
+}
+
+.delete-icon {
+    cursor: pointer;
+    color: #b50c0c; // Bright red
+}
+
+.undo-icon {
+    cursor: pointer;
+    color: #151615; // Green
+}
