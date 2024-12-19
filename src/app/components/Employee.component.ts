@@ -19,10 +19,13 @@ import {
     PaginationModule,
     PinnedRowModule,
     RowClassParams,
+    ICellRendererParams,
 } from "ag-grid-community";
 import { AgGridAngular } from "ag-grid-angular";
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
+import { DeleteCell } from './DeleteCell.component';
 
 ModuleRegistry.registerModules([
     ClientSideRowModelApiModule,
@@ -37,16 +40,17 @@ ModuleRegistry.registerModules([
     RenderApiModule,
     RowStyleModule,
     PaginationModule,
-    PinnedRowModule
+    PinnedRowModule,
 ]);
 
-interface EmployeeData {
+export interface EmployeeData {
     EmployeeID: number;
     FirstName: string;
     LastName: string;
     Department: string;
     Salary: number;
     isNew?: boolean;
+    isDeleted?: boolean;
 }
 
 const EMPTY_EMPLOYEE: EmployeeData = {
@@ -55,14 +59,15 @@ const EMPTY_EMPLOYEE: EmployeeData = {
     LastName: "",
     Department: "",
     Salary: 0,
-    isNew: false
+    isNew: false,
+    isDeleted: false
 };
 
 @Component({
     selector: 'app-employee',
-    imports: [AgGridAngular, MatButtonModule, CommonModule],
-    templateUrl: './Distance.component.html',
-    styleUrls: ['./Distance.component.scss']
+    imports: [AgGridAngular, MatButtonModule, MatIconModule, CommonModule],
+    templateUrl: './Employee.component.html',
+    styleUrls: ['./Employee.component.scss']
 })
 export class EmployeeComponent {
     api?: GridApi<EmployeeData>;
@@ -88,6 +93,7 @@ export class EmployeeComponent {
 
     getRowStyle(params: RowClassParams<EmployeeData>) {
         if (params.data?.isNew === true) return { background: '#d4edda' };
+        if (params.data?.isDeleted === true) return { background: '#f8d7da' };
         return { background: 'white' };
     };
 
@@ -103,9 +109,21 @@ export class EmployeeComponent {
         { field: 'LastName', editable: true },
         { field: 'Department', editable: true },
         { field: 'Salary', editable: true },
-        { field: 'Actions', cellRenderer: 'deleteCellRenderer' },
-        { field: "isNew", hide: true }
+        {
+            field: 'Actions',
+            cellRenderer: DeleteCell,
+            cellRendererParams: {
+                componentParent: this
+            },
+        }
     ];
+
+    context: { componentParent: EmployeeComponent };
+    constructor() {
+        this.context = {
+            componentParent: this
+        }
+    }
 
     addRow() {
         this.pinnedRows.set([{ ...EMPTY_EMPLOYEE }]);
@@ -123,26 +141,32 @@ export class EmployeeComponent {
     cancelEdit() {
         this.pinnedRows.set([]);
         this.rowData.set(this.rowData().filter(row => !row.isNew));
+        this.rowData.set(this.rowData().map(row => ({ ...row, isDeleted: false })));
     }
 
-    deleteRow(rowId: number) {
-        const rowNode = this.api?.getRowNode(rowId.toString());
-        if (rowNode && rowNode.data) {
-            this.api?.applyTransaction({
-                remove: [rowNode.data]
-            });
-        }
+    deleteRow(employeeId: number) {
+        this.rowData.set(this.rowData().map(row => {
+            if (row.EmployeeID === employeeId) {
+                return { ...row, isDeleted: true };
+            }
+            return row;
+        }));
+
     }
 
     saveChanges() {
         const newRows = this.rowData().filter(row => row.isNew)
         console.info("New Rows", newRows);
+        const deletedRows = this.rowData().filter(row => row.isDeleted)
+        console.info("Deleted Rows", deletedRows);
 
         this.pinnedRows.set([]);
-        this.rowData.set(this.rowData().map(row => ({ ...row, isNew: false })));
+        this.rowData.set(this.rowData().flatMap(row => {
+            return row.isDeleted ? [] : { ...row, isNew: false, isDeleted: false }
+        }));
     }
 
     isEditMode() {
-        return this.pinnedRows().length > 0;
+        return this.pinnedRows().length > 0 || this.rowData().some(row => row.isDeleted || row.isNew);
     }
 }
