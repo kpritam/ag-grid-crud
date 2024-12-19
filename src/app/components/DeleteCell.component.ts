@@ -3,35 +3,47 @@ import { Component } from '@angular/core';
 import type { ICellRendererAngularComp } from 'ag-grid-angular';
 import type { ICellRendererParams } from 'ag-grid-community';
 import { EmployeeComponent, EmployeeData } from './Employee.component';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
-    selector: 'app-mission-result-renderer',
-    standalone: true,
-    template: `
-        <button mat-icon-button color="warn" (click)="deleteRow()">Delete</button>
-    `
+    selector: 'app-delete-cell',
+    imports: [MatIconModule],
+    templateUrl: './DeleteCell.component.html'
 })
 export class DeleteCell implements ICellRendererAngularComp {
     params?: ICellRendererParams<EmployeeData>;
     componentParent?: EmployeeComponent;
+    isDeleted: boolean = false;
 
-    // Init Cell Value
-    public value!: string;
     agInit(params: ICellRendererParams<EmployeeData, EmployeeComponent>): void {
         this.params = params;
         this.componentParent = this.params.context.componentParent;
+        this.isDeleted = this.params.data?.isDeleted ?? false;
     }
 
     refresh(params: ICellRendererParams<any, any, any>): boolean {
-        return false;
+        this.isDeleted = params.data?.isDeleted ?? false;
+        return true;
     }
 
     deleteRow(): void {
-        console.log("Delete Row");
-        const data = this.params?.data
-        if (data) {
-            this.componentParent?.deleteRow(data.EmployeeID);
-        }
+        this.toggleDelete(true);
+    }
 
+    undoDelete(): void {
+        this.toggleDelete(false);
+    }
+
+    private toggleDelete(isDeleted: boolean): void {
+        console.log(isDeleted ? "Delete Row" : "Undo Delete");
+        const data = this.params?.data;
+        if (data) {
+            if (isDeleted) {
+                this.componentParent?.deleteRow(data.EmployeeID);
+            } else {
+                this.componentParent?.undoDeleteRow(data.EmployeeID);
+            }
+            this.isDeleted = isDeleted;
+        }
     }
 }

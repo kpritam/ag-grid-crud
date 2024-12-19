@@ -151,7 +151,15 @@ export class EmployeeComponent {
             }
             return row;
         }));
+    }
 
+    undoDeleteRow(employeeId: number) {
+        this.rowData.set(this.rowData().map(row => {
+            if (row.EmployeeID === employeeId) {
+                return { ...row, isDeleted: false };
+            }
+            return row;
+        }));
     }
 
     saveChanges() {
