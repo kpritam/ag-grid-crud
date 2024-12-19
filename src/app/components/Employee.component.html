@@ -6,10 +6,8 @@
             Add
         </button>
     </div>
-    <ag-grid-angular style="width: 100%; height: 100%;" class="ag-theme-alpine" [pinnedTopRowData]="pinnedRows()"
-        [getRowStyle]="getRowStyle" (gridReady)="onGridReady($event)" [rowData]="rowData()" [getRowId]="getRowId"
-        [columnDefs]="columnDefs"
-        [context]="context"
-        >
+    <ag-grid-angular style="width: 100%; height: 100%;" class="ag-theme-alpine" [gridOptions]="gridOptions"
+    [pinnedTopRowData]="pinnedRows()"
+    >
     </ag-grid-angular>
 </div>

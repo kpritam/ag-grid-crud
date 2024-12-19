@@ -1,9 +1,7 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, computed, HostListener, OnInit, signal } from '@angular/core';
 
 import {
-    ClientSideRowModelApiModule,
     GridReadyEvent,
-    ClientSideRowModelModule,
     ColDef,
     GridApi,
     ModuleRegistry,
@@ -19,7 +17,16 @@ import {
     PaginationModule,
     PinnedRowModule,
     RowClassParams,
+    IServerSideDatasource,
+    IServerSideGetRowsParams,
+    GridOptions,
 } from "ag-grid-community";
+
+import {
+    ServerSideRowModelModule,
+    ServerSideRowModelApiModule
+} from "ag-grid-enterprise";
+
 import { AgGridAngular } from "ag-grid-angular";
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -27,12 +34,9 @@ import { CommonModule } from '@angular/common';
 import { DeleteCell } from './DeleteCell.component';
 
 ModuleRegistry.registerModules([
-    ClientSideRowModelApiModule,
     RowSelectionModule,
     RowApiModule,
-    ClientSideRowModelModule,
     ValidationModule,
-    ClientSideRowModelModule,
     NumberEditorModule,
     TextEditorModule,
     CustomEditorModule,
@@ -40,6 +44,8 @@ ModuleRegistry.registerModules([
     RowStyleModule,
     PaginationModule,
     PinnedRowModule,
+    ServerSideRowModelModule,
+    ServerSideRowModelApiModule
 ]);
 
 export interface EmployeeData {
@@ -70,7 +76,7 @@ const EMPTY_EMPLOYEE: EmployeeData = {
 })
 export class EmployeeComponent {
     api?: GridApi<EmployeeData>;
-    pinnedRows = signal<EmployeeData[]>([]); // new row
+    pinnedNewRows = signal<EmployeeData[]>([]);
     rowData = signal<EmployeeData[]>([
         {
             EmployeeID: 1,
@@ -89,6 +95,10 @@ export class EmployeeComponent {
             isNew: false
         }
     ]);
+    deletedRows = signal<EmployeeData[]>([]);
+    pinnedRows = computed(() => [...this.pinnedNewRows(), ...this.deletedRows()]);
+
+    gridOptions!: GridOptions<EmployeeData>;
 
     getRowStyle(params: RowClassParams<EmployeeData>) {
         if (params.data?.isNew === true) return { background: '#d4edda' };
@@ -113,63 +123,69 @@ export class EmployeeComponent {
             flex: 1,
             cellRenderer: DeleteCell,
             cellRendererParams: {
-                componentParent: this
+                deleteFn: (empId: number) => this.deleteRow(empId),
+                undoFn: (empId: number) => this.undoDeleteRow(empId),
             },
         }
     ];
 
-    context: { componentParent: EmployeeComponent };
-
     constructor() {
-        this.context = { componentParent: this }
+        this.gridOptions = {
+            rowModelType: 'serverSide',
+            columnDefs: this.columnDefs,
+            serverSideDatasource: this.serverSideDatasource(),
+            getRowId: this.getRowId,
+            getRowStyle: this.getRowStyle,
+            onGridReady: this.onGridReady.bind(this),
+            pinnedTopRowData: this.pinnedRows(),
+        }
     }
 
     addRow() {
-        this.pinnedRows.set([{ ...EMPTY_EMPLOYEE }]);
+        this.pinnedNewRows.set([{ ...EMPTY_EMPLOYEE }, ...this.pinnedNewRows()]);
         setTimeout(() => {
             this.api?.startEditingCell({
                 rowIndex: 0,
                 colKey: 'EmployeeID',
                 rowPinned: 'top'
             });
-        }, 50);
+        }, 150);
     }
 
     @HostListener('window:keydown', ['$event'])
     handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter' && this.isEditMode()) {
-            const pinned = this.pinnedRows().map(row => ({ ...row, isNew: true }));
-            this.rowData.set([...pinned, ...this.rowData()]);
-            this.addRow();
+            const pinned = this.pinnedNewRows().map(row => ({ ...row, isNew: true }));
+            this.pinnedNewRows.set(pinned);
+            this.addRow()
         }
     }
 
     cancelEdit() {
-        this.pinnedRows.set([]);
+        this.pinnedNewRows.set([]);
+        this.deletedRows.set([]);
+        this.api?.refreshServerSide();
         const existingData = this.rowData().filter(row => !row.isNew).map(row => ({ ...row, isDeleted: false }))
         this.rowData.set(existingData);
     }
 
     deleteRow(employeeId: number) {
         // Stage delete if row is from existing data
-        this.rowData.set(this.rowData().flatMap(row => {
-            if (row.EmployeeID === employeeId) {
-                return row.isNew === true ? [] : [{ ...row, isDeleted: true }]
-            }
-            return row;
-        }));
+        const row = this.rowData().find(row => row.EmployeeID === employeeId)
+        if (row) {
+            this.api?.getRowNode(employeeId.toString())?.setData({ ...row, isDeleted: true },);
+        }
+
 
         // Remove row from pinned rows completely if it's a new row
-        this.pinnedRows.set(this.pinnedRows().filter(row => row.EmployeeID !== employeeId));
+        this.pinnedNewRows.set(this.pinnedNewRows().filter(row => row.EmployeeID !== employeeId));
     }
 
     undoDeleteRow(employeeId: number) {
-        this.rowData.set(this.rowData().map(row => {
-            if (row.EmployeeID === employeeId) {
-                return { ...row, isDeleted: false };
-            }
-            return row;
-        }));
+        const row = this.rowData().find(row => row.EmployeeID === employeeId)
+        if (row) {
+            this.api?.getRowNode(employeeId.toString())?.setData({ ...row, isDeleted: false },);
+        }
     }
 
     saveChanges() {
@@ -178,13 +194,27 @@ export class EmployeeComponent {
         const deletedRows = this.rowData().filter(row => row.isDeleted)
         console.info("Deleted Rows", deletedRows);
 
-        this.pinnedRows.set([]);
+        this.pinnedNewRows.set([]);
         this.rowData.set(this.rowData().flatMap(row => {
             return row.isDeleted ? [] : { ...row, isNew: false, isDeleted: false }
         }));
     }
 
     isEditMode() {
-        return this.pinnedRows().length > 0 || this.rowData().some(row => row.isDeleted || row.isNew);
+        const isDeleted = this.api?.getRenderedNodes()
+            .find(node => node.data?.isNew || node.data?.isDeleted)
+
+        return this.pinnedNewRows().length > 0 || isDeleted;
     }
+
+    serverSideDatasource(): IServerSideDatasource {
+        return {
+            getRows: (params: IServerSideGetRowsParams<EmployeeData>) => {
+                console.log('Requesting rows from server', params.request);
+                const data = this.rowData();
+                params.success({ rowData: data });
+            }
+        };
+    }
+
 }
