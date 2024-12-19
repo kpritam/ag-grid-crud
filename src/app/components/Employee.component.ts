@@ -19,7 +19,6 @@ import {
     PaginationModule,
     PinnedRowModule,
     RowClassParams,
-    ICellRendererParams,
 } from "ag-grid-community";
 import { AgGridAngular } from "ag-grid-angular";
 import { MatButtonModule } from '@angular/material/button';
@@ -71,7 +70,7 @@ const EMPTY_EMPLOYEE: EmployeeData = {
 })
 export class EmployeeComponent {
     api?: GridApi<EmployeeData>;
-    pinnedRows = signal<EmployeeData[]>([]);
+    pinnedRows = signal<EmployeeData[]>([]); // new row
     rowData = signal<EmployeeData[]>([
         {
             EmployeeID: 1,
@@ -111,6 +110,7 @@ export class EmployeeComponent {
         { field: 'Salary', editable: true },
         {
             field: 'Actions',
+            flex: 1,
             cellRenderer: DeleteCell,
             cellRendererParams: {
                 componentParent: this
@@ -119,14 +119,20 @@ export class EmployeeComponent {
     ];
 
     context: { componentParent: EmployeeComponent };
+
     constructor() {
-        this.context = {
-            componentParent: this
-        }
+        this.context = { componentParent: this }
     }
 
     addRow() {
         this.pinnedRows.set([{ ...EMPTY_EMPLOYEE }]);
+        setTimeout(() => {
+            this.api?.startEditingCell({
+                rowIndex: 0,
+                colKey: 'EmployeeID',
+                rowPinned: 'top'
+            });
+        }, 50);
     }
 
     @HostListener('window:keydown', ['$event'])
@@ -140,17 +146,21 @@ export class EmployeeComponent {
 
     cancelEdit() {
         this.pinnedRows.set([]);
-        this.rowData.set(this.rowData().filter(row => !row.isNew));
-        this.rowData.set(this.rowData().map(row => ({ ...row, isDeleted: false })));
+        const existingData = this.rowData().filter(row => !row.isNew).map(row => ({ ...row, isDeleted: false }))
+        this.rowData.set(existingData);
     }
 
     deleteRow(employeeId: number) {
-        this.rowData.set(this.rowData().map(row => {
+        // Stage delete if row is from existing data
+        this.rowData.set(this.rowData().flatMap(row => {
             if (row.EmployeeID === employeeId) {
-                return { ...row, isDeleted: true };
+                return row.isNew === true ? [] : [{ ...row, isDeleted: true }]
             }
             return row;
         }));
+
+        // Remove row from pinned rows completely if it's a new row
+        this.pinnedRows.set(this.pinnedRows().filter(row => row.EmployeeID !== employeeId));
     }
 
     undoDeleteRow(employeeId: number) {
