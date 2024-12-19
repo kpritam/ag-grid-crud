@@ -1,4 +1,4 @@
-import { Component, computed, HostListener, OnInit, signal } from '@angular/core';
+import { Component, HostListener, signal } from '@angular/core';
 
 import {
     GridReadyEvent,
@@ -20,6 +20,7 @@ import {
     IServerSideDatasource,
     IServerSideGetRowsParams,
     GridOptions,
+    RowModelType,
 } from "ag-grid-community";
 
 import {
@@ -68,6 +69,16 @@ const EMPTY_EMPLOYEE: EmployeeData = {
     isDeleted: false
 };
 
+const EMPLOYEES: EmployeeData[] = Array.from({ length: 200 }, (_, i) => ({
+    EmployeeID: i + 1,
+    FirstName: `Employee ${i + 1}`,
+    LastName: `Doe`,
+    Department: `Engineering`,
+    Salary: 60000,
+    isNew: false,
+    isDeleted: false
+}));
+
 @Component({
     selector: 'app-employee',
     imports: [AgGridAngular, MatButtonModule, MatIconModule, CommonModule],
@@ -76,42 +87,10 @@ const EMPTY_EMPLOYEE: EmployeeData = {
 })
 export class EmployeeComponent {
     api?: GridApi<EmployeeData>;
-    pinnedNewRows = signal<EmployeeData[]>([]);
-    rowData = signal<EmployeeData[]>([
-        {
-            EmployeeID: 1,
-            FirstName: "John",
-            LastName: "Doe",
-            Department: "Engineering",
-            Salary: 60000,
-            isNew: false,
-        },
-        {
-            EmployeeID: 2,
-            FirstName: "Jane",
-            LastName: "Smith",
-            Department: "Marketing",
-            Salary: 55000,
-            isNew: false
-        }
-    ]);
-    deletedRows = signal<EmployeeData[]>([]);
-    pinnedRows = computed(() => [...this.pinnedNewRows(), ...this.deletedRows()]);
+    pinnedRows = signal<EmployeeData[]>([]);
+    rowData = signal<EmployeeData[]>(EMPLOYEES);
 
-    gridOptions!: GridOptions<EmployeeData>;
-
-    getRowStyle(params: RowClassParams<EmployeeData>) {
-        if (params.data?.isNew === true) return { background: '#d4edda' };
-        if (params.data?.isDeleted === true) return { background: '#f8d7da' };
-        return { background: 'white' };
-    };
-
-    getRowId(data: GetRowIdParams<EmployeeData>) { return data.data.EmployeeID.toString() }
-
-    onGridReady(event: GridReadyEvent) {
-        this.api = event.api;
-    }
-
+    rowModelType: RowModelType = 'serverSide';
     columnDefs: ColDef[] = [
         { field: 'EmployeeID', editable: true },
         { field: 'FirstName', editable: true },
@@ -129,20 +108,33 @@ export class EmployeeComponent {
         }
     ];
 
-    constructor() {
-        this.gridOptions = {
-            rowModelType: 'serverSide',
-            columnDefs: this.columnDefs,
-            serverSideDatasource: this.serverSideDatasource(),
-            getRowId: this.getRowId,
-            getRowStyle: this.getRowStyle,
-            onGridReady: this.onGridReady.bind(this),
-            pinnedTopRowData: this.pinnedRows(),
-        }
+    gridOptions: GridOptions<EmployeeData> = {
+        rowModelType: this.rowModelType,
+        columnDefs: this.columnDefs,
+        serverSideDatasource: this.serverSideDatasource(),
+        getRowId: this.getRowId,
+        getRowStyle: this.getRowStyle,
+        onGridReady: this.onGridReady.bind(this),
+        pinnedTopRowData: this.pinnedRows(),
+        pagination: true,
+        paginationPageSize: 20,
+        paginationPageSizeSelector: [20, 50, 100],
+    }
+
+    getRowStyle(params: RowClassParams<EmployeeData>) {
+        if (params.data?.isNew === true) return { background: '#d4edda' };
+        if (params.data?.isDeleted === true) return { background: '#f8d7da' };
+        return { background: 'white' };
+    };
+
+    getRowId(data: GetRowIdParams<EmployeeData>) { return data.data.EmployeeID.toString() }
+
+    onGridReady(event: GridReadyEvent) {
+        this.api = event.api;
     }
 
     addRow() {
-        this.pinnedNewRows.set([{ ...EMPTY_EMPLOYEE }, ...this.pinnedNewRows()]);
+        this.pinnedRows.set([{ ...EMPTY_EMPLOYEE }, ...this.pinnedRows()]);
         setTimeout(() => {
             this.api?.startEditingCell({
                 rowIndex: 0,
@@ -155,15 +147,14 @@ export class EmployeeComponent {
     @HostListener('window:keydown', ['$event'])
     handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter' && this.isEditMode()) {
-            const pinned = this.pinnedNewRows().map(row => ({ ...row, isNew: true }));
-            this.pinnedNewRows.set(pinned);
+            const pinned = this.pinnedRows().map(row => ({ ...row, isNew: true }));
+            this.pinnedRows.set(pinned);
             this.addRow()
         }
     }
 
     cancelEdit() {
-        this.pinnedNewRows.set([]);
-        this.deletedRows.set([]);
+        this.pinnedRows.set([]);
         this.api?.refreshServerSide();
         const existingData = this.rowData().filter(row => !row.isNew).map(row => ({ ...row, isDeleted: false }))
         this.rowData.set(existingData);
@@ -176,9 +167,8 @@ export class EmployeeComponent {
             this.api?.getRowNode(employeeId.toString())?.setData({ ...row, isDeleted: true },);
         }
 
-
         // Remove row from pinned rows completely if it's a new row
-        this.pinnedNewRows.set(this.pinnedNewRows().filter(row => row.EmployeeID !== employeeId));
+        this.pinnedRows.set(this.pinnedRows().filter(row => row.EmployeeID !== employeeId));
     }
 
     undoDeleteRow(employeeId: number) {
@@ -194,7 +184,7 @@ export class EmployeeComponent {
         const deletedRows = this.rowData().filter(row => row.isDeleted)
         console.info("Deleted Rows", deletedRows);
 
-        this.pinnedNewRows.set([]);
+        this.pinnedRows.set([]);
         this.rowData.set(this.rowData().flatMap(row => {
             return row.isDeleted ? [] : { ...row, isNew: false, isDeleted: false }
         }));
@@ -204,15 +194,18 @@ export class EmployeeComponent {
         const isDeleted = this.api?.getRenderedNodes()
             .find(node => node.data?.isNew || node.data?.isDeleted)
 
-        return this.pinnedNewRows().length > 0 || isDeleted;
+        return this.pinnedRows().length > 0 || isDeleted;
     }
 
     serverSideDatasource(): IServerSideDatasource {
         return {
             getRows: (params: IServerSideGetRowsParams<EmployeeData>) => {
                 console.log('Requesting rows from server', params.request);
-                const data = this.rowData();
-                params.success({ rowData: data });
+                const startRow = params.request.startRow;
+                if (startRow !== undefined) {
+                    const data = EMPLOYEES.slice(startRow, params.request.endRow);;
+                    params.success({ rowData: data });
+                }
             }
         };
     }

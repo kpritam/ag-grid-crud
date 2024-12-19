@@ -7,7 +7,7 @@
         </button>
     </div>
     <ag-grid-angular style="width: 100%; height: 100%;" class="ag-theme-alpine" [gridOptions]="gridOptions"
-    [pinnedTopRowData]="pinnedRows()"
-    >
+        [pinnedTopRowData]="pinnedRows()" [rowModelType]="rowModelType" [pagination]="true" [paginationPageSize]="20"
+        [paginationPageSizeSelector]="[20, 50, 100]">
     </ag-grid-angular>
 </div>
