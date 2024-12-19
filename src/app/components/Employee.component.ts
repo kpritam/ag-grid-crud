@@ -88,7 +88,7 @@ const EMPLOYEES: EmployeeData[] = Array.from({ length: 200 }, (_, i) => ({
 export class EmployeeComponent {
     api?: GridApi<EmployeeData>;
     pinnedRows = signal<EmployeeData[]>([]);
-    rowData = signal<EmployeeData[]>(EMPLOYEES);
+    rowData = signal<EmployeeData[]>([]);
 
     rowModelType: RowModelType = 'serverSide';
     columnDefs: ColDef[] = [
@@ -155,9 +155,11 @@ export class EmployeeComponent {
 
     cancelEdit() {
         this.pinnedRows.set([]);
-        this.api?.refreshServerSide();
-        const existingData = this.rowData().filter(row => !row.isNew).map(row => ({ ...row, isDeleted: false }))
-        this.rowData.set(existingData);
+        this.api?.getRenderedNodes().forEach(node => {
+            if (node.data?.isNew || node.data?.isDeleted) {
+                node.setData({ ...node.data, isDeleted: false, isNew: false });
+            }
+        })
     }
 
     deleteRow(employeeId: number) {
@@ -179,15 +181,18 @@ export class EmployeeComponent {
     }
 
     saveChanges() {
-        const newRows = this.rowData().filter(row => row.isNew)
+        const newRows = this.pinnedRows().filter(row => row.isNew)
         console.info("New Rows", newRows);
-        const deletedRows = this.rowData().filter(row => row.isDeleted)
+        const deletedRows = this.api?.getRenderedNodes().filter(row => row.data?.isDeleted)
         console.info("Deleted Rows", deletedRows);
 
         this.pinnedRows.set([]);
-        this.rowData.set(this.rowData().flatMap(row => {
-            return row.isDeleted ? [] : { ...row, isNew: false, isDeleted: false }
-        }));
+
+        this.api?.getRenderedNodes().forEach(node => {
+            if (node.data?.isNew || node.data?.isDeleted) {
+                node.setData({ ...node.data, isDeleted: false, isNew: false });
+            }
+        })
     }
 
     isEditMode() {
@@ -203,7 +208,8 @@ export class EmployeeComponent {
                 console.log('Requesting rows from server', params.request);
                 const startRow = params.request.startRow;
                 if (startRow !== undefined) {
-                    const data = EMPLOYEES.slice(startRow, params.request.endRow);;
+                    const data = EMPLOYEES.slice(startRow, params.request.endRow);
+                    this.rowData.set([...this.rowData(), ...data]);
                     params.success({ rowData: data });
                 }
             }
