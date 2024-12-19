@@ -40,75 +40,75 @@ ModuleRegistry.registerModules([
     PinnedRowModule
 ]);
 
-interface RouteData {
-    RouteID: number;
-    FromPort: string;
-    ToPort: string;
-    RouteName: string;
-    TotalDistance: number;
+interface EmployeeData {
+    EmployeeID: number;
+    FirstName: string;
+    LastName: string;
+    Department: string;
+    Salary: number;
     isNew?: boolean;
 }
 
-const EMPTY_ROUTE: RouteData = {
-    RouteID: 0,
-    FromPort: "",
-    ToPort: "",
-    RouteName: "",
-    TotalDistance: 0,
+const EMPTY_EMPLOYEE: EmployeeData = {
+    EmployeeID: 0,
+    FirstName: "",
+    LastName: "",
+    Department: "",
+    Salary: 0,
     isNew: false
 };
 
 @Component({
-    selector: 'app-distance',
+    selector: 'app-employee',
     imports: [AgGridAngular, MatButtonModule, CommonModule],
     templateUrl: './Distance.component.html',
     styleUrls: ['./Distance.component.scss']
 })
-export class DistanceComponent {
-    api?: GridApi<RouteData>;
-    pinnedRows = signal<RouteData[]>([]);
-    rowData = signal<RouteData[]>([
+export class EmployeeComponent {
+    api?: GridApi<EmployeeData>;
+    pinnedRows = signal<EmployeeData[]>([]);
+    rowData = signal<EmployeeData[]>([
         {
-            RouteID: 1,
-            FromPort: "A",
-            ToPort: "B",
-            RouteName: "Direct",
-            TotalDistance: 100,
+            EmployeeID: 1,
+            FirstName: "John",
+            LastName: "Doe",
+            Department: "Engineering",
+            Salary: 60000,
             isNew: false,
         },
         {
-            RouteID: 2,
-            FromPort: "A",
-            ToPort: "C",
-            RouteName: "Direct",
-            TotalDistance: 100,
+            EmployeeID: 2,
+            FirstName: "Jane",
+            LastName: "Smith",
+            Department: "Marketing",
+            Salary: 55000,
             isNew: false
         }
     ]);
 
-    getRowStyle(params: RowClassParams<RouteData>) {
+    getRowStyle(params: RowClassParams<EmployeeData>) {
         if (params.data?.isNew === true) return { background: '#d4edda' };
         return { background: 'white' };
     };
 
-    getRowId(data: GetRowIdParams<RouteData>) { return data.data.RouteID.toString() }
+    getRowId(data: GetRowIdParams<EmployeeData>) { return data.data.EmployeeID.toString() }
 
     onGridReady(event: GridReadyEvent) {
         this.api = event.api;
     }
 
     columnDefs: ColDef[] = [
-        { field: 'RouteID', editable: true },
-        { field: 'FromPort', editable: true },
-        { field: 'ToPort', editable: true },
-        { field: 'RouteName', editable: true },
-        { field: 'TotalDistance', editable: true },
+        { field: 'EmployeeID', editable: true },
+        { field: 'FirstName', editable: true },
+        { field: 'LastName', editable: true },
+        { field: 'Department', editable: true },
+        { field: 'Salary', editable: true },
         { field: 'Actions', cellRenderer: 'deleteCellRenderer' },
-        { field: "isAdded", hide: true }
+        { field: "isNew", hide: true }
     ];
 
     addRow() {
-        this.pinnedRows.set([{ ...EMPTY_ROUTE }]);
+        this.pinnedRows.set([{ ...EMPTY_EMPLOYEE }]);
     }
 
     @HostListener('window:keydown', ['$event'])

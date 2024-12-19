@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { DistanceComponent } from "./components/Distance.component";
+import { EmployeeComponent } from "./components/Distance.component";
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, DistanceComponent],
+  imports: [RouterOutlet, EmployeeComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
