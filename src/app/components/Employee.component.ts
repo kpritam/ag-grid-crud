@@ -32,7 +32,7 @@ import { AgGridAngular } from "ag-grid-angular";
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
-import { DeleteCell } from './DeleteCell.component';
+import { ActionCellRenderer } from './ActionCellRenderer.component';
 
 ModuleRegistry.registerModules([
     RowSelectionModule,
@@ -100,9 +100,9 @@ export class EmployeeComponent {
         {
             field: 'Actions',
             flex: 1,
-            cellRenderer: DeleteCell,
+            cellRenderer: ActionCellRenderer,
             cellRendererParams: {
-                deleteFn: (empId: number) => this.deleteRow(empId),
+                deleteFn: (empId: number) => this.markRowAsDeleted(empId),
                 undoFn: (empId: number) => this.undoDeleteRow(empId),
             },
         }
@@ -133,7 +133,7 @@ export class EmployeeComponent {
         this.api = event.api;
     }
 
-    addRow() {
+    addNewRow() {
         this.pinnedRows.set([{ ...EMPTY_EMPLOYEE }, ...this.pinnedRows()]);
         setTimeout(() => {
             this.api?.startEditingCell({
@@ -149,7 +149,7 @@ export class EmployeeComponent {
         if (event.key === 'Enter' && this.isEditMode()) {
             const pinned = this.pinnedRows().map(row => ({ ...row, isNew: true }));
             this.pinnedRows.set(pinned);
-            this.addRow()
+            this.addNewRow()
         }
     }
 
@@ -162,28 +162,29 @@ export class EmployeeComponent {
         })
     }
 
-    deleteRow(employeeId: number) {
-        // Stage delete if row is from existing data
-        const row = this.rowData().find(row => row.EmployeeID === employeeId)
-        if (row) {
-            this.api?.getRowNode(employeeId.toString())?.setData({ ...row, isDeleted: true },);
-        }
-
-        // Remove row from pinned rows completely if it's a new row
-        this.pinnedRows.set(this.pinnedRows().filter(row => row.EmployeeID !== employeeId));
+    markRowAsDeleted(employeeId: number) {
+        this.updateRowData(employeeId, true);
     }
 
     undoDeleteRow(employeeId: number) {
-        const row = this.rowData().find(row => row.EmployeeID === employeeId)
+        this.updateRowData(employeeId, false);
+    }
+
+    private updateRowData(employeeId: number, isDeleted: boolean) {
+        const row = this.rowData().find(row => row.EmployeeID === employeeId);
         if (row) {
-            this.api?.getRowNode(employeeId.toString())?.setData({ ...row, isDeleted: false },);
+            this.api?.getRowNode(employeeId.toString())?.setData({ ...row, isDeleted });
+        }
+
+        if (isDeleted) {
+            this.pinnedRows.set(this.pinnedRows().filter(row => row.EmployeeID !== employeeId));
         }
     }
 
     saveChanges() {
-        const newRows = this.pinnedRows().filter(row => row.isNew)
+        const newRows = this.pinnedRows().filter(row => row.isNew);
         console.info("New Rows", newRows);
-        const deletedRows = this.api?.getRenderedNodes().filter(row => row.data?.isDeleted)
+        const deletedRows = this.api?.getRenderedNodes().filter(row => row.data?.isDeleted);
         console.info("Deleted Rows", deletedRows);
 
         this.pinnedRows.set([]);
@@ -192,12 +193,12 @@ export class EmployeeComponent {
             if (node.data?.isNew || node.data?.isDeleted) {
                 node.setData({ ...node.data, isDeleted: false, isNew: false });
             }
-        })
+        });
     }
 
     isEditMode() {
         const isDeleted = this.api?.getRenderedNodes()
-            .find(node => node.data?.isNew || node.data?.isDeleted)
+            .find(node => node.data?.isNew || node.data?.isDeleted);
 
         return this.pinnedRows().length > 0 || isDeleted;
     }

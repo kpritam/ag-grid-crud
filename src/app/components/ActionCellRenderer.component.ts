@@ -2,25 +2,25 @@ import { Component } from '@angular/core';
 
 import type { ICellRendererAngularComp } from 'ag-grid-angular';
 import type { ICellRendererParams } from 'ag-grid-community';
-import { EmployeeComponent, EmployeeData } from './Employee.component';
+import { EmployeeData } from './Employee.component';
 import { MatIconModule } from '@angular/material/icon';
 
-type DeleteCellParams = ICellRendererParams<EmployeeData, EmployeeComponent> & {
+type ActionCellRendererParams = ICellRendererParams<EmployeeData> & {
     deleteFn: (id: number) => void;
     undoFn: (id: number) => void;
 };
 
 @Component({
-    selector: 'app-delete-cell',
+    selector: 'app-action-cell-renderer',
     imports: [MatIconModule],
-    templateUrl: './DeleteCell.component.html',
-    styleUrls: ['./DeleteCell.component.scss']
+    templateUrl: './ActionCellRenderer.component.html',
+    styleUrls: ['./ActionCellRenderer.component.scss']
 })
-export class DeleteCell implements ICellRendererAngularComp {
-    params?: DeleteCellParams;
+export class ActionCellRenderer implements ICellRendererAngularComp {
+    params?: ActionCellRendererParams;
     isDeleted: boolean = false;
 
-    agInit(params: DeleteCellParams): void {
+    agInit(params: ActionCellRendererParams): void {
         this.params = params;
         this.isDeleted = this.params.data?.isDeleted ?? false;
     }
