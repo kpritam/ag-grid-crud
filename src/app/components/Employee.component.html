@@ -1,13 +1,37 @@
 <div class="container">
-    <div class="button-group">
-        <button mat-button mat-stroked-button (click)="saveChanges()" [disabled]="!isEditMode()">Save</button>
-        <button mat-button mat-stroked-button (click)="cancelEdit()" [disabled]="!isEditMode()">Cancel</button>
-        <button mat-button mat-stroked-button (click)="addNewRow()">
-            Add
-        </button>
-    </div>
-    <ag-grid-angular style="width: 100%; height: 100%;" class="ag-theme-alpine" [gridOptions]="gridOptions"
-        [pinnedTopRowData]="pinnedRows()" [rowModelType]="rowModelType" [pagination]="true" [paginationPageSize]="20"
-        [paginationPageSizeSelector]="[20, 50, 100]">
-    </ag-grid-angular>
+  <div class="button-group">
+    <button
+      mat-button
+      mat-stroked-button
+      (click)="saveChanges()"
+      [disabled]="!isEditMode()"
+    >
+      Save
+    </button>
+    <button
+      mat-button
+      mat-stroked-button
+      (click)="cancelEdit()"
+      [disabled]="!isEditMode()"
+    >
+      Cancel
+    </button>
+    <button mat-button mat-stroked-button (click)="addNewRow()">Add</button>
+  </div>
+  <ag-grid-angular
+    style="width: 100%; height: 100%"
+    class="ag-theme-alpine"
+    [columnDefs]="columnDefs"
+    [getRowId]="getRowId"
+    [getRowStyle]="getRowStyle"
+    (gridReady)="onGridReady($event)"
+    [pinnedTopRowData]="pinnedRows()"
+    [rowModelType]="rowModelType"
+    [pagination]="true"
+    [paginationPageSize]="20"
+    [paginationPageSizeSelector]="[20, 50, 100]"
+    [masterDetail]="true"
+    [detailCellRendererParams]="detailCellRendererParams"
+  >
+  </ag-grid-angular>
 </div>

@@ -8,7 +8,7 @@ body {
 
 body {
   margin: 5rem;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
 
 .new-row {
@@ -50,7 +50,7 @@ body {
 
   .ag-cell-inline-editing {
     border: none;
-    box-shadow: none
+    box-shadow: none;
   }
 
   .ag-ltr .ag-cell-focus:not(.ag-cell-range-selected):focus-within {

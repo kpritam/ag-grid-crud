@@ -19,16 +19,22 @@ import {
     RowClassParams,
     IServerSideDatasource,
     IServerSideGetRowsParams,
-    GridOptions,
     RowModelType,
-} from "ag-grid-community";
+    IDetailCellRendererParams,
+    GetDetailRowDataParams,
+    ClientSideRowModelModule
+} from 'ag-grid-community';
 
 import {
     ServerSideRowModelModule,
-    ServerSideRowModelApiModule
-} from "ag-grid-enterprise";
+    ServerSideRowModelApiModule,
+    MasterDetailModule,
+    ColumnMenuModule,
+    ContextMenuModule,
+    ColumnsToolPanelModule,
+} from 'ag-grid-enterprise';
 
-import { AgGridAngular } from "ag-grid-angular";
+import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
@@ -46,8 +52,19 @@ ModuleRegistry.registerModules([
     PaginationModule,
     PinnedRowModule,
     ServerSideRowModelModule,
-    ServerSideRowModelApiModule
+    ServerSideRowModelApiModule,
+    MasterDetailModule,
+    ColumnMenuModule,
+    ContextMenuModule,
+    ColumnsToolPanelModule,
+    ClientSideRowModelModule
 ]);
+
+export interface Skill {
+    Name: string;
+    Rating: number;
+    YearsOfExperience: number;
+}
 
 export interface EmployeeData {
     EmployeeID: number;
@@ -55,35 +72,42 @@ export interface EmployeeData {
     LastName: string;
     Department: string;
     Salary: number;
+    Skills: Skill[];
     isNew?: boolean;
     isDeleted?: boolean;
 }
 
 const EMPTY_EMPLOYEE: EmployeeData = {
     EmployeeID: 0,
-    FirstName: "",
-    LastName: "",
-    Department: "",
+    FirstName: '',
+    LastName: '',
+    Department: '',
     Salary: 0,
+    Skills: [{ Name: 'Scala', Rating: 5, YearsOfExperience: 3 }],
     isNew: false,
-    isDeleted: false
+    isDeleted: false,
 };
 
-const EMPLOYEES: EmployeeData[] = Array.from({ length: 200 }, (_, i) => ({
+const EMPLOYEES: EmployeeData[] = Array.from({ length: 5 }, (_, i) => ({
     EmployeeID: i + 1,
     FirstName: `Employee ${i + 1}`,
     LastName: `Doe`,
     Department: `Engineering`,
     Salary: 60000,
+    Skills: [
+        { Name: 'Scala', Rating: 5, YearsOfExperience: 3 },
+        { Name: 'Angular', Rating: 4, YearsOfExperience: 2 },
+        { Name: 'GraphDB', Rating: 3, YearsOfExperience: 1 },
+    ],
     isNew: false,
-    isDeleted: false
+    isDeleted: false,
 }));
 
 @Component({
     selector: 'app-employee',
     imports: [AgGridAngular, MatButtonModule, MatIconModule, CommonModule],
     templateUrl: './Employee.component.html',
-    styleUrls: ['./Employee.component.scss']
+    styleUrls: ['./Employee.component.scss'],
 })
 export class EmployeeComponent {
     api?: GridApi<EmployeeData>;
@@ -92,7 +116,7 @@ export class EmployeeComponent {
 
     rowModelType: RowModelType = 'serverSide';
     columnDefs: ColDef[] = [
-        { field: 'EmployeeID', editable: true },
+        { field: 'EmployeeID', editable: true, cellRenderer: "agGroupCellRenderer" },
         { field: 'FirstName', editable: true },
         { field: 'LastName', editable: true },
         { field: 'Department', editable: true },
@@ -105,32 +129,22 @@ export class EmployeeComponent {
                 deleteFn: (empId: number) => this.markRowAsDeleted(empId),
                 undoFn: (empId: number) => this.undoDeleteRow(empId),
             },
-        }
+        },
     ];
-
-    gridOptions: GridOptions<EmployeeData> = {
-        rowModelType: this.rowModelType,
-        columnDefs: this.columnDefs,
-        serverSideDatasource: this.serverSideDatasource(),
-        getRowId: this.getRowId,
-        getRowStyle: this.getRowStyle,
-        onGridReady: this.onGridReady.bind(this),
-        pinnedTopRowData: this.pinnedRows(),
-        pagination: true,
-        paginationPageSize: 20,
-        paginationPageSizeSelector: [20, 50, 100],
-    }
 
     getRowStyle(params: RowClassParams<EmployeeData>) {
         if (params.data?.isNew === true) return { background: '#d4edda' };
         if (params.data?.isDeleted === true) return { background: '#f8d7da' };
         return { background: 'white' };
-    };
+    }
 
-    getRowId(data: GetRowIdParams<EmployeeData>) { return data.data.EmployeeID.toString() }
+    getRowId(data: GetRowIdParams<EmployeeData>) {
+        return data.data.EmployeeID.toString();
+    }
 
     onGridReady(event: GridReadyEvent) {
         this.api = event.api;
+        this.api?.setGridOption("serverSideDatasource", this.serverSideDatasource());
     }
 
     addNewRow() {
@@ -139,7 +153,7 @@ export class EmployeeComponent {
             this.api?.startEditingCell({
                 rowIndex: 0,
                 colKey: 'EmployeeID',
-                rowPinned: 'top'
+                rowPinned: 'top',
             });
         }, 150);
     }
@@ -147,19 +161,19 @@ export class EmployeeComponent {
     @HostListener('window:keydown', ['$event'])
     handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter' && this.isEditMode()) {
-            const pinned = this.pinnedRows().map(row => ({ ...row, isNew: true }));
+            const pinned = this.pinnedRows().map((row) => ({ ...row, isNew: true }));
             this.pinnedRows.set(pinned);
-            this.addNewRow()
+            this.addNewRow();
         }
     }
 
     cancelEdit() {
         this.pinnedRows.set([]);
-        this.api?.getRenderedNodes().forEach(node => {
+        this.api?.getRenderedNodes().forEach((node) => {
             if (node.data?.isNew || node.data?.isDeleted) {
                 node.setData({ ...node.data, isDeleted: false, isNew: false });
             }
-        })
+        });
     }
 
     markRowAsDeleted(employeeId: number) {
@@ -171,25 +185,31 @@ export class EmployeeComponent {
     }
 
     private updateRowData(employeeId: number, isDeleted: boolean) {
-        const row = this.rowData().find(row => row.EmployeeID === employeeId);
+        const row = this.rowData().find((row) => row.EmployeeID === employeeId);
         if (row) {
-            this.api?.getRowNode(employeeId.toString())?.setData({ ...row, isDeleted });
+            this.api
+                ?.getRowNode(employeeId.toString())
+                ?.setData({ ...row, isDeleted });
         }
 
         if (isDeleted) {
-            this.pinnedRows.set(this.pinnedRows().filter(row => row.EmployeeID !== employeeId));
+            this.pinnedRows.set(
+                this.pinnedRows().filter((row) => row.EmployeeID !== employeeId),
+            );
         }
     }
 
     saveChanges() {
-        const newRows = this.pinnedRows().filter(row => row.isNew);
-        console.info("New Rows", newRows);
-        const deletedRows = this.api?.getRenderedNodes().filter(row => row.data?.isDeleted);
-        console.info("Deleted Rows", deletedRows);
+        const newRows = this.pinnedRows().filter((row) => row.isNew);
+        console.info('New Rows', newRows);
+        const deletedRows = this.api
+            ?.getRenderedNodes()
+            .filter((row) => row.data?.isDeleted);
+        console.info('Deleted Rows', deletedRows);
 
         this.pinnedRows.set([]);
 
-        this.api?.getRenderedNodes().forEach(node => {
+        this.api?.getRenderedNodes().forEach((node) => {
             if (node.data?.isNew || node.data?.isDeleted) {
                 node.setData({ ...node.data, isDeleted: false, isNew: false });
             }
@@ -197,8 +217,9 @@ export class EmployeeComponent {
     }
 
     isEditMode() {
-        const isDeleted = this.api?.getRenderedNodes()
-            .find(node => node.data?.isNew || node.data?.isDeleted);
+        const isDeleted = this.api
+            ?.getRenderedNodes()
+            .find((node) => node.data?.isNew || node.data?.isDeleted);
 
         return this.pinnedRows().length > 0 || isDeleted;
     }
@@ -213,8 +234,24 @@ export class EmployeeComponent {
                     this.rowData.set([...this.rowData(), ...data]);
                     params.success({ rowData: data });
                 }
-            }
+            },
         };
     }
 
+    detailCellRendererParams: IDetailCellRendererParams = {
+        detailGridOptions: {
+            columnDefs: [
+                { field: 'Name', headerName: 'Skill Name' },
+                { field: 'Rating', headerName: 'Rating' },
+                { field: 'YearsOfExperience', headerName: 'Years of Experience' },
+            ],
+            defaultColDef: {
+                flex: 1,
+                editable: true,
+            },
+        },
+        getDetailRowData: (params: GetDetailRowDataParams<EmployeeData>) => {
+            params.successCallback(params.data.Skills);
+        },
+    } as IDetailCellRendererParams;
 }
