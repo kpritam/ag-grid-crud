@@ -2,13 +2,7 @@ import { Component } from '@angular/core';
 
 import type { ICellRendererAngularComp } from 'ag-grid-angular';
 import type { ICellRendererParams } from 'ag-grid-community';
-import { EmployeeData } from '../employee/Employee.component';
 import { MatIconModule } from '@angular/material/icon';
-
-type ActionCellRendererParams = ICellRendererParams<EmployeeData> & {
-  deleteFn: (id: number) => void;
-  undoFn: (id: number) => void;
-};
 
 @Component({
   selector: 'app-action-cell-renderer',
@@ -17,15 +11,15 @@ type ActionCellRendererParams = ICellRendererParams<EmployeeData> & {
   styleUrls: ['./ActionCellRenderer.component.scss'],
 })
 export class ActionCellRenderer implements ICellRendererAngularComp {
-  params?: ActionCellRendererParams;
+  params?: ICellRendererParams;
   isDeleted: boolean = false;
 
-  agInit(params: ActionCellRendererParams): void {
+  agInit(params: ICellRendererParams): void {
     this.params = params;
     this.isDeleted = this.params.data?.isDeleted ?? false;
   }
 
-  refresh(params: ICellRendererParams<any, any, any>): boolean {
+  refresh(params: ICellRendererParams): boolean {
     this.isDeleted = params.data?.isDeleted ?? false;
     return true;
   }
@@ -39,14 +33,15 @@ export class ActionCellRenderer implements ICellRendererAngularComp {
   }
 
   private toggleDelete(isDeleted: boolean): void {
-    console.log(isDeleted ? 'Delete Row' : 'Undo Delete');
     const data = this.params?.data;
     if (data) {
+
       if (isDeleted) {
-        this.params?.deleteFn(data.EmployeeID);
+        this.params?.node.setData({ ...data, isDeleted: true });
       } else {
-        this.params?.undoFn(data.EmployeeID);
+        this.params?.node.setData({ ...data, isDeleted: false });
       }
+
       this.isDeleted = isDeleted;
     }
   }

@@ -22,7 +22,8 @@ import {
     RowModelType,
     IDetailCellRendererParams,
     GetDetailRowDataParams,
-    ClientSideRowModelModule
+    ClientSideRowModelModule,
+    RowStyle
 } from 'ag-grid-community';
 
 import {
@@ -64,6 +65,8 @@ export interface Skill {
     Name: string;
     Rating: number;
     YearsOfExperience: number;
+    isNew?: boolean;
+    isDeleted?: boolean;
 }
 
 export interface EmployeeData {
@@ -83,7 +86,7 @@ const EMPTY_EMPLOYEE: EmployeeData = {
     LastName: '',
     Department: '',
     Salary: 0,
-    Skills: [{ Name: 'Scala', Rating: 5, YearsOfExperience: 3 }],
+    Skills: [{ Name: 'Scala', Rating: 5, YearsOfExperience: 3, isNew: false, isDeleted: false }],
     isNew: false,
     isDeleted: false,
 };
@@ -95,9 +98,9 @@ const EMPLOYEES: EmployeeData[] = Array.from({ length: 50 }, (_, i) => ({
     Department: `Engineering`,
     Salary: 60000,
     Skills: [
-        { Name: 'Scala', Rating: 5, YearsOfExperience: 3 },
-        { Name: 'Angular', Rating: 4, YearsOfExperience: 2 },
-        { Name: 'GraphDB', Rating: 3, YearsOfExperience: 1 },
+        { Name: 'Scala', Rating: 5, YearsOfExperience: 3, isNew: false, isDeleted: false },
+        { Name: 'Angular', Rating: 4, YearsOfExperience: 2, isNew: false, isDeleted: false },
+        { Name: 'GraphDB', Rating: 3, YearsOfExperience: 1, isNew: false, isDeleted: false },
     ],
     isNew: false,
     isDeleted: false,
@@ -122,22 +125,8 @@ export class EmployeeComponent {
         { field: 'LastName', editable: true },
         { field: 'Department', editable: true },
         { field: 'Salary', editable: true },
-        {
-            field: 'Actions',
-            flex: 1,
-            cellRenderer: ActionCellRenderer,
-            cellRendererParams: {
-                deleteFn: (empId: number) => this.markRowAsDeleted(empId),
-                undoFn: (empId: number) => this.undoDeleteRow(empId),
-            },
-        },
+        { field: 'Actions', cellRenderer: ActionCellRenderer },
     ];
-
-    getRowStyle(params: RowClassParams<EmployeeData>) {
-        if (params.data?.isNew === true) return { background: '#d4edda' };
-        if (params.data?.isDeleted === true) return { background: '#f8d7da' };
-        return { background: 'white' };
-    }
 
     getRowId(data: GetRowIdParams<EmployeeData>) {
         return data.data.EmployeeID.toString();
@@ -176,30 +165,6 @@ export class EmployeeComponent {
                 node.setData({ ...node.data, isDeleted: false, isNew: false });
             }
         });
-    }
-
-    markRowAsDeleted(employeeId: number) {
-        this.updateRowData(employeeId, true);
-    }
-
-    undoDeleteRow(employeeId: number) {
-        this.updateRowData(employeeId, false);
-    }
-
-    private updateRowData(employeeId: number, isDeleted: boolean) {
-        const row = this.rowData().find((row) => row.EmployeeID === employeeId);
-        if (row) {
-            const node = this.api?.getRowNode(employeeId.toString())
-            if (node !== undefined && node.data !== undefined) {
-                node.setData({ ...node.data, isDeleted });
-            }
-        }
-
-        if (isDeleted) {
-            this.pinnedRows.set(
-                this.pinnedRows().filter((row) => row.EmployeeID !== employeeId),
-            );
-        }
     }
 
     saveChanges() {
@@ -247,14 +212,23 @@ export class EmployeeComponent {
                 { field: 'Name', headerName: 'Skill Name' },
                 { field: 'Rating', headerName: 'Rating' },
                 { field: 'YearsOfExperience', headerName: 'Years of Experience' },
+                { field: 'Actions', cellRenderer: ActionCellRenderer },
             ],
             defaultColDef: {
                 flex: 1,
                 editable: true,
             },
+            getRowStyle: (params: RowClassParams<Skill>) => this.getRowStyle(params),
         },
         getDetailRowData: (params: GetDetailRowDataParams<EmployeeData>) => {
             params.successCallback(params.data.Skills);
         },
     } as IDetailCellRendererParams;
+
+    getRowStyle<T extends { isNew?: boolean, isDeleted?: boolean }>(params: RowClassParams<T>): RowStyle {
+        if (params.data?.isNew === true) return { background: '#d4edda' };
+        if (params.data?.isDeleted === true) return { background: '#f8d7da' };
+        return { background: 'white' };
+    }
+
 }
