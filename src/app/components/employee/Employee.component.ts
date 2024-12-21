@@ -1,110 +1,27 @@
 import { Component, HostListener, signal } from '@angular/core';
-
 import {
     GridReadyEvent,
     ColDef,
     GridApi,
-    ModuleRegistry,
-    RowApiModule,
-    RowSelectionModule,
-    CustomEditorModule,
-    NumberEditorModule,
-    TextEditorModule,
-    ValidationModule,
     GetRowIdParams,
-    RenderApiModule,
-    RowStyleModule,
-    PaginationModule,
-    PinnedRowModule,
     RowClassParams,
     IServerSideDatasource,
     IServerSideGetRowsParams,
     RowModelType,
     IDetailCellRendererParams,
     GetDetailRowDataParams,
-    ClientSideRowModelModule,
     RowStyle
 } from 'ag-grid-community';
-
-import {
-    ServerSideRowModelModule,
-    ServerSideRowModelApiModule,
-    MasterDetailModule,
-    ColumnMenuModule,
-    ContextMenuModule,
-    ColumnsToolPanelModule,
-} from 'ag-grid-enterprise';
-
 import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { ActionCellRenderer } from '../action-cell/ActionCellRenderer.component';
+import { registerAgGridModules } from '../../ag-grid-module-register';
+import { EmployeeData, Skill } from '../../api/employee';
+import { EMPLOYEES, EMPTY_EMPLOYEE } from '../../api/data';
 
-ModuleRegistry.registerModules([
-    RowSelectionModule,
-    RowApiModule,
-    ValidationModule,
-    NumberEditorModule,
-    TextEditorModule,
-    CustomEditorModule,
-    RenderApiModule,
-    RowStyleModule,
-    PaginationModule,
-    PinnedRowModule,
-    ServerSideRowModelModule,
-    ServerSideRowModelApiModule,
-    MasterDetailModule,
-    ColumnMenuModule,
-    ContextMenuModule,
-    ColumnsToolPanelModule,
-    ClientSideRowModelModule
-]);
-
-export interface Skill {
-    Name: string;
-    Rating: number;
-    YearsOfExperience: number;
-    isNew?: boolean;
-    isDeleted?: boolean;
-}
-
-export interface EmployeeData {
-    EmployeeID: number;
-    FirstName: string;
-    LastName: string;
-    Department: string;
-    Salary: number;
-    Skills: Skill[];
-    isNew?: boolean;
-    isDeleted?: boolean;
-}
-
-const EMPTY_EMPLOYEE: EmployeeData = {
-    EmployeeID: 0,
-    FirstName: '',
-    LastName: '',
-    Department: '',
-    Salary: 0,
-    Skills: [{ Name: 'Scala', Rating: 5, YearsOfExperience: 3, isNew: false, isDeleted: false }],
-    isNew: false,
-    isDeleted: false,
-};
-
-const EMPLOYEES: EmployeeData[] = Array.from({ length: 50 }, (_, i) => ({
-    EmployeeID: i + 1,
-    FirstName: `Employee ${i + 1}`,
-    LastName: `Doe`,
-    Department: `Engineering`,
-    Salary: 60000,
-    Skills: [
-        { Name: 'Scala', Rating: 5, YearsOfExperience: 3, isNew: false, isDeleted: false },
-        { Name: 'Angular', Rating: 4, YearsOfExperience: 2, isNew: false, isDeleted: false },
-        { Name: 'GraphDB', Rating: 3, YearsOfExperience: 1, isNew: false, isDeleted: false },
-    ],
-    isNew: false,
-    isDeleted: false,
-}));
+registerAgGridModules();
 
 @Component({
     selector: 'app-employee',
