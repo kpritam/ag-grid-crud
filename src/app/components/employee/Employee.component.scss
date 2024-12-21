@@ -1,0 +1,13 @@
+:host {
+  .container {
+    height: 600px;
+    gap: 10px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 10px;
+  }
+}

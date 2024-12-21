@@ -38,7 +38,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
-import { ActionCellRenderer } from './ActionCellRenderer.component';
+import { ActionCellRenderer } from '../action-cell/ActionCellRenderer.component';
 
 ModuleRegistry.registerModules([
     RowSelectionModule,
@@ -88,7 +88,7 @@ const EMPTY_EMPLOYEE: EmployeeData = {
     isDeleted: false,
 };
 
-const EMPLOYEES: EmployeeData[] = Array.from({ length: 5 }, (_, i) => ({
+const EMPLOYEES: EmployeeData[] = Array.from({ length: 50 }, (_, i) => ({
     EmployeeID: i + 1,
     FirstName: `Employee ${i + 1}`,
     LastName: `Doe`,
@@ -113,6 +113,7 @@ export class EmployeeComponent {
     api?: GridApi<EmployeeData>;
     pinnedRows = signal<EmployeeData[]>([]);
     rowData = signal<EmployeeData[]>([]);
+    totalRows = signal(EMPLOYEES.length);
 
     rowModelType: RowModelType = 'serverSide';
     columnDefs: ColDef[] = [
@@ -149,6 +150,7 @@ export class EmployeeComponent {
 
     addNewRow() {
         this.pinnedRows.set([{ ...EMPTY_EMPLOYEE }, ...this.pinnedRows()]);
+
         setTimeout(() => {
             this.api?.startEditingCell({
                 rowIndex: 0,
@@ -187,9 +189,10 @@ export class EmployeeComponent {
     private updateRowData(employeeId: number, isDeleted: boolean) {
         const row = this.rowData().find((row) => row.EmployeeID === employeeId);
         if (row) {
-            this.api
-                ?.getRowNode(employeeId.toString())
-                ?.setData({ ...row, isDeleted });
+            const node = this.api?.getRowNode(employeeId.toString())
+            if (node !== undefined && node.data !== undefined) {
+                node.setData({ ...node.data, isDeleted });
+            }
         }
 
         if (isDeleted) {

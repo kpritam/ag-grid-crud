@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 
 import type { ICellRendererAngularComp } from 'ag-grid-angular';
 import type { ICellRendererParams } from 'ag-grid-community';
-import { EmployeeData } from './Employee.component';
+import { EmployeeData } from '../employee/Employee.component';
 import { MatIconModule } from '@angular/material/icon';
 
 type ActionCellRendererParams = ICellRendererParams<EmployeeData> & {

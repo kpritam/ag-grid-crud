@@ -1,0 +1,23 @@
+:host {
+  height: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .delete-icon,
+  .undo-icon {
+    cursor: pointer;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .delete-icon {
+    color: #b50c0c;
+  }
+
+  .undo-icon {
+    color: #151615;
+  }
+
+}
