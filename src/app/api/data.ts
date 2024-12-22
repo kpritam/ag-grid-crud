@@ -6,9 +6,8 @@ export const EMPTY_EMPLOYEE: EmployeeData = {
     LastName: '',
     Department: '',
     Salary: 0,
-    Skills: [{ Name: 'Scala', Rating: 5, YearsOfExperience: 3, isNew: false, isDeleted: false }],
-    isNew: false,
-    isDeleted: false,
+    Skills: [{ Name: 'Scala', Rating: 5, YearsOfExperience: 3, status: "BeingAdded" }],
+    status: "BeingAdded"
 };
 
 export const EMPLOYEES: EmployeeData[] = Array.from({ length: 50 }, (_, i) => ({
@@ -18,10 +17,9 @@ export const EMPLOYEES: EmployeeData[] = Array.from({ length: 50 }, (_, i) => ({
     Department: `Engineering`,
     Salary: 60000,
     Skills: [
-        { Name: 'Scala', Rating: 5, YearsOfExperience: 3, isNew: false, isDeleted: false },
-        { Name: 'Angular', Rating: 4, YearsOfExperience: 2, isNew: false, isDeleted: false },
-        { Name: 'GraphDB', Rating: 3, YearsOfExperience: 1, isNew: false, isDeleted: false },
+        { Name: 'Scala', Rating: 5, YearsOfExperience: 3, status: "Server" },
+        { Name: 'Angular', Rating: 4, YearsOfExperience: 2, status: "Server" },
+        { Name: 'GraphDB', Rating: 3, YearsOfExperience: 1, status: "Server" },
     ],
-    isNew: false,
-    isDeleted: false,
+    status: "Server"
 }));

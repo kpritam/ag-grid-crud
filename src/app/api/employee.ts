@@ -1,9 +1,11 @@
+
+export type RowStatus = 'BeingAdded' | 'New' | 'Deleted' | 'Server';
+
 export interface Skill {
     Name: string;
     Rating: number;
     YearsOfExperience: number;
-    isNew?: boolean;
-    isDeleted?: boolean;
+    status?: RowStatus;
 }
 
 export interface EmployeeData {
@@ -13,6 +15,5 @@ export interface EmployeeData {
     Department: string;
     Salary: number;
     Skills: Skill[];
-    isNew?: boolean;
-    isDeleted?: boolean;
+    status?: RowStatus
 }
