@@ -41,7 +41,11 @@ export class EmployeeComponent {
   deletedRows = signal<EmployeeData[]>([]);
   deletedSkills = signal<Record<number, Skill[]>>({});
 
-  hasChanges = computed(() => this.newRows().length > 0 || this.deletedRows().length > 0);
+hasChanges = computed(() => 
+    this.newRows().length > 0 || 
+    this.deletedRows().length > 0 || 
+    Object.keys(this.deletedSkills()).length > 0
+);
 
   rowModelType: RowModelType = 'serverSide';
   columnDefs: ColDef[] = [
@@ -65,10 +69,18 @@ export class EmployeeComponent {
   ];
 
   constructor() {
-    effect(() => { console.info('New Rows', this.newRows()); });
-    effect(() => { console.info('Deleted Rows', this.deletedRows()); });
-    effect(() => { console.info('Visited Rows', this.visitedRows()); });
-    effect(() => { console.info('Deleted Skills', this.deletedSkills()); });
+    effect(() => {
+      console.info('New Rows', this.newRows());
+    });
+    effect(() => {
+      console.info('Deleted Rows', this.deletedRows());
+    });
+    effect(() => {
+      console.info('Visited Rows', this.visitedRows());
+    });
+    effect(() => {
+      console.info('Deleted Skills', this.deletedSkills());
+    });
   }
 
   getRowId(data: GetRowIdParams<EmployeeData>) {
@@ -122,12 +134,13 @@ export class EmployeeComponent {
 
   saveChanges() {
     const newRows = this.newRows().filter((row) => row.status === 'New');
-    console.info('New Rows', newRows);
-    const deletedRows = this.deletedRows();
-    console.info('Deleted Rows', deletedRows);
+    console.info('[S] New Rows', newRows);
+    console.info('[S] Deleted Rows', this.deletedRows());
+    console.info('[S] Deleted Skills', this.deletedSkills());
 
     this.newRows.set([]);
     this.deletedRows.set([]);
+    this.deletedSkills.set([]);
 
     this.api?.refreshServerSide();
   }
@@ -167,35 +180,38 @@ export class EmployeeComponent {
             } as ActionCellRendererParams<Skill>,
           },
         ],
-        defaultColDef: {
-          flex: 1,
-          editable: true,
-        },
+        defaultColDef: { editable: true },
         getRowStyle: (params: RowClassParams<Skill>) => this.getRowStyle(params),
       },
       getDetailRowData: (params: GetDetailRowDataParams<EmployeeData>) => {
-        params.successCallback(params.data.Skills);
+        const empId = params.data.EmployeeID;
+        const skills = params.data.Skills.map((skill) => {
+          const deletedSkills = this.deletedSkills()[empId] || [];
+          const deletedSkill = deletedSkills.find((ds) => ds.Name === skill.Name);
+          return deletedSkill ? { ...skill, status: 'Deleted' } : skill;
+        });
+        params.successCallback(skills);
       },
     } as IDetailCellRendererParams;
   };
 
   deleteSkillCallback = (ctx: MasterGridContext, data: Skill) => {
     this.deletedSkills.update((skillsMap) => {
-        const empId = ctx.masterGrid.node.data.EmployeeID;
-        const skills = skillsMap[empId] || [];
-        skills.push(data);
-        return { ...skillsMap, [empId]: skills };
+      const empId = ctx.masterGrid.node.data.EmployeeID;
+      const skills = skillsMap[empId] || [];
+      skills.push({ ...data, status: 'Deleted' });
+      return { ...skillsMap, [empId]: skills };
     });
   };
 
   undoDeleteSkillCallback = (ctx: MasterGridContext, data: Skill) => {
     this.deletedSkills.update((skillsMap) => {
-        const empId = ctx.masterGrid.node.data.EmployeeID;
-        const skills = skillsMap[empId] || [];
-        const updatedSkills = skills.filter((skill) => skill.Name !== data.Name);
-        return updatedSkills.length > 0 
-            ? { ...skillsMap, [empId]: updatedSkills } 
-            : (({ [empId]: _, ...rest }) => rest)(skillsMap);
+      const empId = ctx.masterGrid.node.data.EmployeeID;
+      const skills = skillsMap[empId] || [];
+      const updatedSkills = skills.filter((skill) => skill.Name !== data.Name);
+      return updatedSkills.length > 0
+        ? { ...skillsMap, [empId]: updatedSkills }
+        : (({ [empId]: _, ...rest }) => rest)(skillsMap);
     });
   };
 

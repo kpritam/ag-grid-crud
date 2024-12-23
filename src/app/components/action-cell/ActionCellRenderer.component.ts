@@ -3,7 +3,7 @@ import { Component } from '@angular/core';
 import type { ICellRendererAngularComp } from 'ag-grid-angular';
 import type { ICellRendererParams, IRowNode } from 'ag-grid-community';
 import { MatIconModule } from '@angular/material/icon';
-import { EmployeeData, RowStatus } from '../../api/employee';
+import { RowStatus } from '../../api/employee';
 
 export type MasterGridContext = {
   masterGrid: { node: IRowNode };
@@ -39,10 +39,9 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
   deleteRow(): void {
     const data = this.params?.data;
     if (data) {
-      if (data && data.status === 'Server') {
+      if (data.status === 'Server') {
         this.params?.node.setData({ ...data, status: 'Deleted' });
       }
-
       this.params?.deleteCallback(this.params?.context, data);
     }
   }
