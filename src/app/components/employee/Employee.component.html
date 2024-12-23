@@ -4,7 +4,7 @@
       mat-button
       mat-stroked-button
       (click)="saveChanges()"
-      [disabled]="!isEditMode()"
+      [disabled]="!hasChanges()"
     >
       Save
     </button>
@@ -12,7 +12,7 @@
       mat-button
       mat-stroked-button
       (click)="cancelEdit()"
-      [disabled]="!isEditMode()"
+      [disabled]="!hasChanges()"
     >
       Cancel
     </button>
@@ -25,9 +25,10 @@
     [getRowId]="getRowId"
     [getRowStyle]="getRowStyle"
     (gridReady)="onGridReady($event)"
-    [pinnedTopRowData]="pinnedRows()"
+    [pinnedTopRowData]="newRows()"
     [rowModelType]="rowModelType"
     [pagination]="true"
+    [cacheBlockSize]="10"
     [paginationPageSize]="10"
     [paginationPageSizeSelector]="[10, 20, 50]"
     [masterDetail]="true"

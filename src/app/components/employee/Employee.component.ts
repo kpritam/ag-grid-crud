@@ -1,4 +1,4 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, computed, HostListener, signal } from '@angular/core';
 import {
   GridReadyEvent,
   ColDef,
@@ -34,9 +34,12 @@ registerAgGridModules();
 })
 export class EmployeeComponent {
   api?: GridApi<EmployeeData>;
-  pinnedRows = signal<EmployeeData[]>([]);
-  rowData = signal<EmployeeData[]>([]);
-  totalRows = signal(EMPLOYEES.length);
+
+  visitedRows = signal<EmployeeData[]>([]);
+  newRows = signal<EmployeeData[]>([]);
+  deletedRows = signal<EmployeeData[]>([]);
+
+  hasChanges = computed(() => this.newRows().length > 0 || this.deletedRows().length > 0);
 
   rowModelType: RowModelType = 'serverSide';
   columnDefs: ColDef[] = [
@@ -51,11 +54,11 @@ export class EmployeeComponent {
     { field: 'Salary', editable: true },
     {
       field: 'Actions',
-      cellRenderer: ActionCellRenderer,
+      cellRenderer: ActionCellRenderer<EmployeeData>,
       cellRendererParams: {
         deleteCallback: (row) => this.deleteRowCallback(row),
         undoDeleteCallback: (row) => this.undoDeleteCallback(row),
-      } as ActionCellRendererParams,
+      } as ActionCellRendererParams<EmployeeData>,
     },
   ];
 
@@ -69,7 +72,7 @@ export class EmployeeComponent {
   }
 
   addNewRow() {
-    this.pinnedRows.set([{ ...EMPTY_EMPLOYEE }, ...this.pinnedRows()]);
+    this.newRows.update((rows) => [{ ...EMPTY_EMPLOYEE }, ...rows]);
 
     setTimeout(() => {
       this.api?.startEditingCell({
@@ -82,9 +85,9 @@ export class EmployeeComponent {
 
   deleteRowCallback = (data: EmployeeData) => {
     if (data.status === 'New' || data.status === 'BeingAdded') {
-      const pinned = this.pinnedRows();
-      const filtered = pinned.filter((row) => row.EmployeeID !== data.EmployeeID);
-      this.pinnedRows.set(filtered);
+      this.newRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
+    } else {
+      this.deletedRows.update((rows) => [...rows, { ...data, status: 'Deleted' }]);
     }
   };
 
@@ -94,17 +97,13 @@ export class EmployeeComponent {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Enter' && this.isEditMode()) {
-      const pinned: EmployeeData[] = this.pinnedRows().map((row) => ({
-        ...row,
-        status: 'New',
-      }));
-      this.pinnedRows.set(pinned);
+    if (event.key === 'Enter' && this.hasChanges()) {
+      this.newRows.update((row) => row.map((row) => ({ ...row, status: 'New' })));
     }
   }
 
   cancelEdit() {
-    this.pinnedRows.set([]);
+    this.newRows.set([]);
     this.api?.getRenderedNodes().forEach((node) => {
       if (node.data?.status === 'New' || node.data?.status === 'Deleted') {
         node.setData({ ...node.data, status: 'Server' });
@@ -113,25 +112,15 @@ export class EmployeeComponent {
   }
 
   saveChanges() {
-    const newRows = this.pinnedRows().filter((row) => row.status === 'New');
+    const newRows = this.newRows().filter((row) => row.status === 'New');
     console.info('New Rows', newRows);
-    const deletedRows = this.api
-      ?.getRenderedNodes()
-      .filter((row) => row.data?.status === 'Deleted');
+    const deletedRows = this.deletedRows();
     console.info('Deleted Rows', deletedRows);
 
-    this.pinnedRows.set([]);
+    this.newRows.set([]);
+    this.deletedRows.set([]);
 
-    this.api?.getRenderedNodes().forEach((node) => {
-      if (node.data?.status === 'New' || node.data?.status === 'Deleted') {
-        node.setData({ ...node.data, status: 'Server' });
-      }
-    });
-  }
-
-  isEditMode() {
-    const isDeleted = this.api?.getRenderedNodes().find((node) => node.data?.status === 'Deleted');
-    return this.pinnedRows().length > 0 || isDeleted;
+    this.api?.refreshServerSide();
   }
 
   serverSideDatasource(): IServerSideDatasource {
@@ -141,7 +130,7 @@ export class EmployeeComponent {
         const startRow = params.request.startRow;
         if (startRow !== undefined) {
           const data = EMPLOYEES.slice(startRow, params.request.endRow);
-          this.rowData.set([...this.rowData(), ...data]);
+          this.visitedRows.update((rows) => [...rows, ...data]);
           params.success({ rowData: data });
         }
       },
@@ -154,7 +143,14 @@ export class EmployeeComponent {
         { field: 'Name', headerName: 'Skill Name' },
         { field: 'Rating', headerName: 'Rating' },
         { field: 'YearsOfExperience', headerName: 'Years of Experience' },
-        { field: 'Actions', cellRenderer: ActionCellRenderer },
+        {
+          field: 'Actions',
+          cellRenderer: ActionCellRenderer<Skill>,
+          cellRendererParams: {
+            deleteCallback: (row) => this.deleteSkillCallback(row),
+            undoDeleteCallback: (row) => this.undoDeleteSkillCallback(row),
+          } as ActionCellRendererParams<Skill>,
+        },
       ],
       defaultColDef: {
         flex: 1,
@@ -166,6 +162,14 @@ export class EmployeeComponent {
       params.successCallback(params.data.Skills);
     },
   } as IDetailCellRendererParams;
+
+    deleteSkillCallback = (data: Skill) => {
+        console.info('Deleting Skill', data);
+    };
+
+    undoDeleteSkillCallback = (data: Skill) => {
+        console.info('Undoing Delete Skill', data);
+    };
 
   getRowStyle<T extends { status?: RowStatus }>(params: RowClassParams<T>): RowStyle {
     if (params.data?.status === 'New') return { background: '#d4edda' };
