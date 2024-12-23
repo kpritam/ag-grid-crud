@@ -1,14 +1,18 @@
 import { Component } from '@angular/core';
 
 import type { ICellRendererAngularComp } from 'ag-grid-angular';
-import type { ICellRendererParams } from 'ag-grid-community';
+import type { ICellRendererParams, IRowNode } from 'ag-grid-community';
 import { MatIconModule } from '@angular/material/icon';
 import { EmployeeData, RowStatus } from '../../api/employee';
 
+export type MasterGridContext = {
+  masterGrid: { node: IRowNode };
+};
+
 export interface ActionCellRendererParams<TData extends { status?: RowStatus }>
   extends ICellRendererParams<TData> {
-  deleteCallback: (data: TData) => void;
-  undoDeleteCallback: (data: TData) => void;
+  deleteCallback: (context: MasterGridContext, data: TData) => void;
+  undoDeleteCallback: (context: MasterGridContext, data: TData) => void;
 }
 
 @Component({
@@ -39,7 +43,7 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
         this.params?.node.setData({ ...data, status: 'Deleted' });
       }
 
-      this.params?.deleteCallback(data);
+      this.params?.deleteCallback(this.params?.context, data);
     }
   }
 
@@ -47,7 +51,7 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
     const data = this.params?.data;
     if (data) {
       this.params?.node.setData({ ...data, status: 'Server' });
-      this.params?.deleteCallback(data);
+      this.params?.undoDeleteCallback(this.params.context, data);
     }
   }
 }

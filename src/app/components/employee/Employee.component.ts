@@ -1,4 +1,4 @@
-import { Component, computed, HostListener, signal } from '@angular/core';
+import { Component, computed, effect, HostListener, signal } from '@angular/core';
 import {
   GridReadyEvent,
   ColDef,
@@ -19,6 +19,7 @@ import { CommonModule } from '@angular/common';
 import {
   ActionCellRenderer,
   ActionCellRendererParams,
+  MasterGridContext,
 } from '../action-cell/ActionCellRenderer.component';
 import { registerAgGridModules } from '../../ag-grid-module-register';
 import { EmployeeData, RowStatus, Skill } from '../../api/employee';
@@ -38,6 +39,7 @@ export class EmployeeComponent {
   visitedRows = signal<EmployeeData[]>([]);
   newRows = signal<EmployeeData[]>([]);
   deletedRows = signal<EmployeeData[]>([]);
+  deletedSkills = signal<Record<number, Skill[]>>({});
 
   hasChanges = computed(() => this.newRows().length > 0 || this.deletedRows().length > 0);
 
@@ -56,11 +58,18 @@ export class EmployeeComponent {
       field: 'Actions',
       cellRenderer: ActionCellRenderer<EmployeeData>,
       cellRendererParams: {
-        deleteCallback: (row) => this.deleteRowCallback(row),
-        undoDeleteCallback: (row) => this.undoDeleteCallback(row),
+        deleteCallback: (_, row) => this.deleteRowCallback(row),
+        undoDeleteCallback: (_, row) => this.undoDeleteCallback(row),
       } as ActionCellRendererParams<EmployeeData>,
     },
   ];
+
+  constructor() {
+    effect(() => { console.info('New Rows', this.newRows()); });
+    effect(() => { console.info('Deleted Rows', this.deletedRows()); });
+    effect(() => { console.info('Visited Rows', this.visitedRows()); });
+    effect(() => { console.info('Deleted Skills', this.deletedSkills()); });
+  }
 
   getRowId(data: GetRowIdParams<EmployeeData>) {
     return data.data.EmployeeID.toString();
@@ -137,39 +146,58 @@ export class EmployeeComponent {
     };
   }
 
-  detailCellRendererParams: IDetailCellRendererParams = {
-    detailGridOptions: {
-      columnDefs: [
-        { field: 'Name', headerName: 'Skill Name' },
-        { field: 'Rating', headerName: 'Rating' },
-        { field: 'YearsOfExperience', headerName: 'Years of Experience' },
-        {
-          field: 'Actions',
-          cellRenderer: ActionCellRenderer<Skill>,
-          cellRendererParams: {
-            deleteCallback: (row) => this.deleteSkillCallback(row),
-            undoDeleteCallback: (row) => this.undoDeleteSkillCallback(row),
-          } as ActionCellRendererParams<Skill>,
+  detailCellRendererParams = (masterGridParams: any): IDetailCellRendererParams => {
+    return {
+      detailGridOptions: {
+        context: {
+          masterGrid: {
+            node: masterGridParams.node.parent,
+          },
         },
-      ],
-      defaultColDef: {
-        flex: 1,
-        editable: true,
+        columnDefs: [
+          { field: 'Name', headerName: 'Skill Name' },
+          { field: 'Rating', headerName: 'Rating' },
+          { field: 'YearsOfExperience', headerName: 'Years of Experience' },
+          {
+            field: 'Actions',
+            cellRenderer: ActionCellRenderer<Skill>,
+            cellRendererParams: {
+              deleteCallback: (ctx, row) => this.deleteSkillCallback(ctx, row),
+              undoDeleteCallback: (ctx, row) => this.undoDeleteSkillCallback(ctx, row),
+            } as ActionCellRendererParams<Skill>,
+          },
+        ],
+        defaultColDef: {
+          flex: 1,
+          editable: true,
+        },
+        getRowStyle: (params: RowClassParams<Skill>) => this.getRowStyle(params),
       },
-      getRowStyle: (params: RowClassParams<Skill>) => this.getRowStyle(params),
-    },
-    getDetailRowData: (params: GetDetailRowDataParams<EmployeeData>) => {
-      params.successCallback(params.data.Skills);
-    },
-  } as IDetailCellRendererParams;
+      getDetailRowData: (params: GetDetailRowDataParams<EmployeeData>) => {
+        params.successCallback(params.data.Skills);
+      },
+    } as IDetailCellRendererParams;
+  };
 
-    deleteSkillCallback = (data: Skill) => {
-        console.info('Deleting Skill', data);
-    };
+  deleteSkillCallback = (ctx: MasterGridContext, data: Skill) => {
+    this.deletedSkills.update((skillsMap) => {
+        const empId = ctx.masterGrid.node.data.EmployeeID;
+        const skills = skillsMap[empId] || [];
+        skills.push(data);
+        return { ...skillsMap, [empId]: skills };
+    });
+  };
 
-    undoDeleteSkillCallback = (data: Skill) => {
-        console.info('Undoing Delete Skill', data);
-    };
+  undoDeleteSkillCallback = (ctx: MasterGridContext, data: Skill) => {
+    this.deletedSkills.update((skillsMap) => {
+        const empId = ctx.masterGrid.node.data.EmployeeID;
+        const skills = skillsMap[empId] || [];
+        const updatedSkills = skills.filter((skill) => skill.Name !== data.Name);
+        return updatedSkills.length > 0 
+            ? { ...skillsMap, [empId]: updatedSkills } 
+            : (({ [empId]: _, ...rest }) => rest)(skillsMap);
+    });
+  };
 
   getRowStyle<T extends { status?: RowStatus }>(params: RowClassParams<T>): RowStyle {
     if (params.data?.status === 'New') return { background: '#d4edda' };
