@@ -12,7 +12,15 @@ Watch the following demo video to see the application in action:
 
 ### Main Branch
 
-The `main` branch contains the core functionality of the application, including:
+The `main` branch extends the functionality of the `client-side` branch to include server-side data management, including:
+
+- Server-side pagination.
+- Integration with a mock backend server for data fetching and updates.
+- Server-side row model with master-detail table.
+
+### Client-Side Branch
+
+The `client-side` branch contains the core functionality of the application, including:
 
 - Displaying employee data in an AG Grid table.
 - Adding new employees.
@@ -20,14 +28,6 @@ The `main` branch contains the core functionality of the application, including:
 - Deleting employees.
 - Managing employee skills.
 - Client-side data management.
-
-### Server-Side Branch
-
-The `server-side` branch extends the functionality of the `main` branch to include server-side data management, including:
-
-- Server-side pagination.
-- Integration with a fake backend server for data fetching and updates.
-- Server-side row model with master-detail table.
 
 ## 🚀 Development Server
 
@@ -51,16 +51,20 @@ This will compile your project and store the build artifacts in the `dist/` dire
 
 ## ✨ Features
 
-- **Employee Management**: Add, edit, and delete employees.
-- **Skill Management**: Add, edit, and delete skills for each employee.
-- **Server-Side Pagination**: Efficiently handle large datasets with server-side pagination.
-- **Data Persistence**: Placeholder to save changes to persistent backend database.
-- **Master-Detail Table**: Display detailed information for each employee using a master-detail table.
-- **Server-Side Row Model**: Efficiently manage large datasets with server-side data fetching and updates.
+- [x] **Employee Management**
+- [x] **Skill Management**
+- [x] **Server-Side Pagination**
+- [x] **Data Persistence**
+- [x] **Master-Detail Table**
+- [x] **Server-Side Row Model**
+- [ ] **Sorting**
+- [ ] **Filtering**
+- [ ] **Editing Rows**
+- [ ] **Partial Highlight Rows (When some of the skills are deleted)**
+- [ ] **Pinning Deleted and Newly Added Rows (Wishlist)**
 
 ## 📚 Additional Resources
 
 For more information on using AG Grid with Angular, visit the [AG Grid Documentation](https://www.ag-grid.com/documentation/).
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
-
