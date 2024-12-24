@@ -10,12 +10,15 @@ Watch the following demo video to see the application in action:
 
 ## ✨ Features
 
-- ✅ **Employee Management**
-- ✅ **Skill Management**
-- ✅ **Server-Side Pagination**
-- ✅ **Data Persistence**
-- ✅ **Master-Detail Table**
-- ✅ **Server-Side Row Model**
+✅ **Employee Management**
+✅ **Skill Management**
+✅ **Server-Side Pagination**
+✅ **Data Persistence**
+✅ **Master-Detail Table**
+✅ **Server-Side Row Model**
+✅ **Add Row**
+✅ **Delete Row**
+✅ **Delete Nested Row**
 - [ ] **Sorting**
 - [ ] **Filtering**
 - [ ] **Editing Rows**
