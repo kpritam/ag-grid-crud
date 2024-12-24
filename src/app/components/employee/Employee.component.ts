@@ -40,12 +40,15 @@ export class EmployeeComponent {
   newRows = signal<EmployeeData[]>([]);
   deletedRows = signal<EmployeeData[]>([]);
   deletedSkills = signal<Record<number, Skill[]>>({});
+  rowBeingAdded = signal<EmployeeData | null>(null);
 
-hasChanges = computed(() => 
-    this.newRows().length > 0 || 
-    this.deletedRows().length > 0 || 
-    Object.keys(this.deletedSkills()).length > 0
-);
+  hasChanges = computed(
+    () =>
+      this.rowBeingAdded() !== null ||
+      this.newRows().length > 0 ||
+      this.deletedRows().length > 0 ||
+      Object.keys(this.deletedSkills()).length > 0,
+  );
 
   rowModelType: RowModelType = 'serverSide';
   columnDefs: ColDef[] = [
@@ -93,20 +96,25 @@ hasChanges = computed(() =>
   }
 
   addNewRow() {
-    this.newRows.update((rows) => [{ ...EMPTY_EMPLOYEE }, ...rows]);
+    if (this.api?.paginationGetCurrentPage() !== 0) {
+      this.api?.paginationGoToFirstPage();
+    }
+
+    const id = Math.floor(Math.random() * 10000000);
+    const newRow = { ...EMPTY_EMPLOYEE, EmployeeID: id };
+    this.rowBeingAdded.set(newRow);
+
+    this.api?.applyServerSideTransaction({ addIndex: 0, add: [newRow] });
 
     setTimeout(() => {
-      this.api?.startEditingCell({
-        rowIndex: 0,
-        colKey: 'EmployeeID',
-        rowPinned: 'top',
-      });
-    }, 150);
+      this.api?.startEditingCell({ rowIndex: 0, colKey: 'EmployeeID' });
+    }, 100);
   }
 
   deleteRowCallback = (data: EmployeeData) => {
     if (data.status === 'New' || data.status === 'BeingAdded') {
       this.newRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
+      this.applyLocalChanges();
     } else {
       this.deletedRows.update((rows) => [...rows, { ...data, status: 'Deleted' }]);
     }
@@ -119,12 +127,22 @@ hasChanges = computed(() =>
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Enter' && this.hasChanges()) {
-      this.newRows.update((row) => row.map((row) => ({ ...row, status: 'New' })));
+      const topRow = this.rowBeingAdded();
+      if (topRow) {
+        const topNode = this.api
+          ?.getRenderedNodes()
+          .find((node) => node.data?.EmployeeID === topRow?.EmployeeID);
+
+        topNode?.setData({ ...topRow, status: 'New' });
+        this.newRows.update((row) => [{ ...topRow, status: 'New' }, ...row]);
+        this.rowBeingAdded.set(null);
+      }
     }
   }
 
   cancelEdit() {
-    this.newRows.set([]);
+    this.cleanState();
+
     this.api?.getRenderedNodes().forEach((node) => {
       if (node.data?.status === 'New' || node.data?.status === 'Deleted') {
         node.setData({ ...node.data, status: 'Server' });
@@ -138,9 +156,7 @@ hasChanges = computed(() =>
     console.info('[S] Deleted Rows', this.deletedRows());
     console.info('[S] Deleted Skills', this.deletedSkills());
 
-    this.newRows.set([]);
-    this.deletedRows.set([]);
-    this.deletedSkills.set([]);
+    this.cleanState();
 
     this.api?.refreshServerSide();
   }
@@ -150,8 +166,12 @@ hasChanges = computed(() =>
       getRows: (params: IServerSideGetRowsParams<EmployeeData>) => {
         console.log('Requesting rows from server', params.request);
         const startRow = params.request.startRow;
-        if (startRow !== undefined) {
-          const data = EMPLOYEES.slice(startRow, params.request.endRow);
+        const endRow = params.request.endRow;
+        if (startRow !== undefined && endRow !== undefined) {
+          const adjustedStart = Math.max(0, startRow - this.newRows().length);
+          const adjustedEnd = Math.max(0, endRow - this.newRows().length);
+
+          const data = EMPLOYEES.slice(adjustedStart, adjustedEnd);
           this.visitedRows.update((rows) => [...rows, ...data]);
           params.success({ rowData: data });
         }
@@ -220,4 +240,25 @@ hasChanges = computed(() =>
     if (params.data?.status === 'Deleted') return { background: '#f8d7da' };
     return { background: 'white' };
   }
+
+  applyLocalChanges() {
+    const serverRows =
+      this.api
+        ?.getRenderedNodes()
+        .filter((node) => node.data?.status === 'Server' || node.data?.status === 'Deleted')
+        .flatMap((node) => (node.data ? [node.data] : [])) ?? [];
+
+    this.api?.applyServerSideRowData({
+      successParams: {
+        rowData: [...this.newRows(), ...serverRows],
+      },
+    });
+  }
+
+  private cleanState = () => {
+    this.newRows.set([]);
+    this.deletedRows.set([]);
+    this.deletedSkills.set({});
+    this.rowBeingAdded.set(null);
+  };
 }
