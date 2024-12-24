@@ -4,7 +4,7 @@ This project demonstrates the use of AG Grid with Angular for managing employee 
 
 ## Demo
 
-[![AG GRID CRUD DEMO]]([https://youtu.be/vt5fpE0bzSY](https://github.com/user-attachments/assets/cc50f7c1-9670-46e3-b652-774fcc2f4028)
+[AG GRID CRUD DEMO](https://github.com/user-attachments/assets/cc50f7c1-9670-46e3-b652-774fcc2f4028)
 
 ## Branches
 
