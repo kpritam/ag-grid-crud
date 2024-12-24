@@ -8,6 +8,20 @@ Watch the following demo video to see the application in action:
 
 [AG GRID CRUD DEMO](https://github.com/user-attachments/assets/cc50f7c1-9670-46e3-b652-774fcc2f4028)
 
+## ✨ Features
+
+- ✅ **Employee Management**
+- ✅ **Skill Management**
+- ✅ **Server-Side Pagination**
+- ✅ **Data Persistence**
+- ✅ **Master-Detail Table**
+- ✅ **Server-Side Row Model**
+- [ ] **Sorting**
+- [ ] **Filtering**
+- [ ] **Editing Rows**
+- [ ] **Partial Highlight Rows (When some of the skills are deleted)**
+- [ ] **Pinning Deleted and Newly Added Rows (Wishlist)**
+
 ## 🌿 Branches
 
 ### Main Branch
@@ -48,20 +62,6 @@ ng build
 ```
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## ✨ Features
-
-- [x] **Employee Management**
-- [x] **Skill Management**
-- [x] **Server-Side Pagination**
-- [x] **Data Persistence**
-- [x] **Master-Detail Table**
-- [x] **Server-Side Row Model**
-- [ ] **Sorting**
-- [ ] **Filtering**
-- [ ] **Editing Rows**
-- [ ] **Partial Highlight Rows (When some of the skills are deleted)**
-- [ ] **Pinning Deleted and Newly Added Rows (Wishlist)**
 
 ## 📚 Additional Resources
 
