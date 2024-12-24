@@ -114,13 +114,14 @@ export class EmployeeComponent {
   deleteRowCallback = (data: EmployeeData) => {
     if (data.status === 'New' || data.status === 'BeingAdded') {
       this.newRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
-      this.applyLocalChanges();
+      this.api?.applyServerSideTransaction({ remove: [data] });
     } else {
       this.deletedRows.update((rows) => [...rows, { ...data, status: 'Deleted' }]);
     }
   };
 
   undoDeleteCallback = (data: EmployeeData) => {
+    this.deletedRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
     console.info('Undoing Delete', data);
   };
 
@@ -239,20 +240,6 @@ export class EmployeeComponent {
     if (params.data?.status === 'New') return { background: '#d4edda' };
     if (params.data?.status === 'Deleted') return { background: '#f8d7da' };
     return { background: 'white' };
-  }
-
-  applyLocalChanges() {
-    const serverRows =
-      this.api
-        ?.getRenderedNodes()
-        .filter((node) => node.data?.status === 'Server' || node.data?.status === 'Deleted')
-        .flatMap((node) => (node.data ? [node.data] : [])) ?? [];
-
-    this.api?.applyServerSideRowData({
-      successParams: {
-        rowData: [...this.newRows(), ...serverRows],
-      },
-    });
   }
 
   private cleanState = () => {
