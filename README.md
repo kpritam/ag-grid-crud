@@ -2,6 +2,10 @@
 
 This project demonstrates the use of AG Grid with Angular for managing employee data. The application supports adding, editing, and deleting employees and their skills, with server-side pagination and data management. It also uses the server-side row model with a master-detail table.
 
+## Demo
+
+[![AG GRID CRUD DEMO]]([https://youtu.be/vt5fpE0bzSY](https://github.com/user-attachments/assets/cc50f7c1-9670-46e3-b652-774fcc2f4028)
+
 ## Branches
 
 ### Main Branch
