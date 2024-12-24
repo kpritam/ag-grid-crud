@@ -142,6 +142,11 @@ export class EmployeeComponent {
   }
 
   cancelEdit() {
+    const topRow = this.rowBeingAdded();
+    const newRows = this.newRows();
+    const removeRows = topRow ? [topRow, ...newRows] : newRows;
+    this.api?.applyServerSideTransaction({ remove: removeRows });
+
     this.cleanState();
 
     this.api?.getRenderedNodes().forEach((node) => {
