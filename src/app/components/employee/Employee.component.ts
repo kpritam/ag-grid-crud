@@ -11,6 +11,7 @@ import {
   IDetailCellRendererParams,
   GetDetailRowDataParams,
   RowStyle,
+  ICellRendererParams,
 } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -24,6 +25,10 @@ import {
 import { registerAgGridModules } from '../../ag-grid-module-register';
 import { EmployeeData, RowStatus, Skill } from '../../api/employee';
 import { EMPLOYEES, EMPTY_EMPLOYEE } from '../../api/data';
+import {
+  InputTextCellRendererComponent,
+  InputTextCellRendererParams,
+} from '../input-text-cell-renderer/input-text-cell-renderer.component';
 
 registerAgGridModules();
 
@@ -51,16 +56,64 @@ export class EmployeeComponent {
   );
 
   rowModelType: RowModelType = 'serverSide';
+
   columnDefs: ColDef[] = [
+    { field: 'group', cellRenderer: 'agGroupCellRenderer', flex: 0.1 },
     {
       field: 'EmployeeID',
       editable: true,
-      cellRenderer: 'agGroupCellRenderer',
+      cellRendererSelector: (params) => ({
+        ...this.inputCellRenderer<number>(params),
+        params: {
+          initialValue: params.data.EmployeeID,
+          placeholder: 'Emp Id',
+        } as InputTextCellRendererParams<number>,
+      }),
     },
-    { field: 'FirstName', editable: true },
-    { field: 'LastName', editable: true },
-    { field: 'Department', editable: true },
-    { field: 'Salary', editable: true },
+    {
+      field: 'FirstName',
+      editable: true,
+      cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
+        ...this.inputCellRenderer<string>(params),
+        params: {
+          initialValue: params.data?.FirstName,
+          placeholder: 'First',
+        } as InputTextCellRendererParams<string>,
+      }),
+    },
+    {
+      field: 'LastName',
+      editable: true,
+      cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
+        ...this.inputCellRenderer<string>(params),
+        params: {
+          initialValue: params.data?.LastName,
+          placeholder: 'Last',
+        } as InputTextCellRendererParams<string>,
+      }),
+    },
+    {
+      field: 'Department',
+      editable: true,
+      cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
+        ...this.inputCellRenderer<string>(params),
+        params: {
+          initialValue: params.data?.Department,
+          placeholder: 'Dept',
+        } as InputTextCellRendererParams<string>,
+      }),
+    },
+    {
+      field: 'Salary',
+      editable: true,
+      cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
+        ...this.inputCellRenderer<string>(params),
+        params: {
+          initialValue: params.data?.Salary,
+          placeholder: 'Salary',
+        } as InputTextCellRendererParams<string>,
+      }),
+    },
     {
       field: 'Actions',
       cellRenderer: ActionCellRenderer<EmployeeData>,
@@ -253,4 +306,10 @@ export class EmployeeComponent {
     this.deletedSkills.set({});
     this.rowBeingAdded.set(null);
   };
+
+  inputCellRenderer<T>(params: ICellRendererParams<EmployeeData>) {
+    return params.data?.status === 'BeingAdded'
+      ? { component: InputTextCellRendererComponent<T> }
+      : undefined;
+  }
 }
