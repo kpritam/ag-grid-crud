@@ -2,6 +2,7 @@
   <input
     class="input"
     #input
+    [ngClass]="{'row-being-added': params.data?.status === 'BeingAdded'}"
     [placeholder]="placeholder"
     [(ngModel)]="inputValue"
     (focus)="onFocus()"

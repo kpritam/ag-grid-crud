@@ -78,7 +78,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data.EmployeeID,
           placeholder: 'Emp Id',
-        } as InputTextCellRendererParams<number>,
+        } as InputTextCellRendererParams<EmployeeData, number>,
       }),
     },
     {
@@ -88,7 +88,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data?.FirstName,
           placeholder: 'First',
-        } as InputTextCellRendererParams<string>,
+        } as InputTextCellRendererParams<EmployeeData, string>,
       }),
     },
     {
@@ -98,7 +98,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data?.LastName,
           placeholder: 'Last',
-        } as InputTextCellRendererParams<string>,
+        } as InputTextCellRendererParams<EmployeeData, string>,
       }),
     },
     {
@@ -108,7 +108,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data?.Department,
           placeholder: 'Dept',
-        } as InputTextCellRendererParams<string>,
+        } as InputTextCellRendererParams<EmployeeData, string>,
       }),
     },
     {
@@ -118,7 +118,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data?.Salary,
           placeholder: 'Salary',
-        } as InputTextCellRendererParams<string>,
+        } as InputTextCellRendererParams<EmployeeData, string>,
       }),
     },
     {
@@ -332,9 +332,9 @@ export class EmployeeComponent {
     this.rowBeingAdded.set(null);
   };
 
-  inputCellRenderer<T>(params: ICellRendererParams<EmployeeData>) {
+  inputCellRenderer<TValue>(params: ICellRendererParams<EmployeeData>) {
     return params.data?.status === 'BeingAdded' || params.data?.status === 'BeingEdited'
-      ? { component: InputTextCellRendererComponent<T> }
+      ? { component: InputTextCellRendererComponent<EmployeeData, TValue> }
       : undefined;
   }
 }

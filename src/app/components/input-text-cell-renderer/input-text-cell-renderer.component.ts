@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, HostBinding } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-enterprise';
 import { RowStatus } from '../../api/employee';
 
-export interface InputTextCellRendererParams<T> extends ICellRendererParams<T> {
-  initialValue?: T;
+export interface InputTextCellRendererParams<TData extends { status?: RowStatus }, TValue>
+  extends ICellRendererParams<TData, TValue> {
+  initialValue?: TValue;
   placeholder?: string;
   keypressCallback?: (event: KeyboardEvent) => void;
 }
@@ -17,15 +18,17 @@ export interface InputTextCellRendererParams<T> extends ICellRendererParams<T> {
   templateUrl: './input-text-cell-renderer.component.html',
   styleUrl: './input-text-cell-renderer.component.scss',
 })
-export class InputTextCellRendererComponent<T> implements ICellRendererAngularComp {
-  params!: InputTextCellRendererParams<T>;
+export class InputTextCellRendererComponent<TData extends { status?: RowStatus }, TValue>
+  implements ICellRendererAngularComp
+{
+  params!: InputTextCellRendererParams<TData, TValue>;
 
-  inputValue?: T;
+  inputValue?: TValue;
 
-  initialValue?: T;
+  initialValue?: TValue;
   placeholder?: string;
 
-  agInit(params: InputTextCellRendererParams<T>): void {
+  agInit(params: InputTextCellRendererParams<TData, TValue>): void {
     this.params = params;
     this.placeholder = this.params.placeholder;
     this.initialValue = this.params.initialValue;
@@ -34,7 +37,7 @@ export class InputTextCellRendererComponent<T> implements ICellRendererAngularCo
       : (this.inputValue = this.initialValue);
   }
 
-  refresh(params: InputTextCellRendererParams<T>): boolean {
+  refresh(params: InputTextCellRendererParams<TData, TValue>): boolean {
     this.params = params;
     return false;
   }
