@@ -2,10 +2,13 @@
   <input
     class="input"
     #input
-    [ngClass]="{'row-being-added': params.data?.status === 'BeingAdded'}"
+    [ngClass]="{
+      'row-being-added': params.data?.status === 'BeingAdded',
+      'invalid-input': params.required && !inputValue,
+    }"
     [placeholder]="placeholder"
     [(ngModel)]="inputValue"
     (focus)="onFocus()"
     (blur)="onBlur()"
-    />
+  />
 </div>

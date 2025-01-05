@@ -1,4 +1,4 @@
-import { SuppressKeyboardEventParams } from "ag-grid-enterprise";
+import { SuppressKeyboardEventParams } from 'ag-grid-enterprise';
 
 const GRID_CELL_CLASSNAME = 'ag-cell';
 

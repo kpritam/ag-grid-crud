@@ -9,6 +9,7 @@ export interface InputTextCellRendererParams<TData extends { status?: RowStatus 
   extends ICellRendererParams<TData, TValue> {
   initialValue?: TValue;
   placeholder?: string;
+  required?: boolean;
   keypressCallback?: (event: KeyboardEvent) => void;
 }
 

@@ -78,6 +78,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data.EmployeeID,
           placeholder: 'Emp Id',
+          required: true,
         } as InputTextCellRendererParams<EmployeeData, number>,
       }),
     },
@@ -88,6 +89,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data?.FirstName,
           placeholder: 'First',
+          required: true,
         } as InputTextCellRendererParams<EmployeeData, string>,
       }),
     },
@@ -108,6 +110,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data?.Department,
           placeholder: 'Dept',
+          required: true,
         } as InputTextCellRendererParams<EmployeeData, string>,
       }),
     },
@@ -198,6 +201,11 @@ export class EmployeeComponent {
           .find((node) => node.data?.EmployeeID === changedRow?.EmployeeID);
 
         if (changedRow.status === 'BeingAdded') {
+          // Validation: Ensure all fields are filled
+          if (!changedRow.EmployeeID || !changedRow.FirstName || !changedRow.Department) {
+            return;
+          }
+
           changedNode?.setData({ ...changedRow, status: 'Added' });
           this.editedRows.update((row) => [{ ...changedRow, status: 'Added' }, ...row]);
           this.rowBeingAdded.set(null);

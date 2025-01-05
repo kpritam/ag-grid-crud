@@ -1,19 +1,9 @@
 <div class="container">
   <div class="button-group">
-    <button
-      mat-button
-      mat-stroked-button
-      (click)="saveChanges()"
-      [disabled]="!saveEnabled()"
-    >
+    <button mat-button mat-stroked-button (click)="saveChanges()" [disabled]="!saveEnabled()">
       Save
     </button>
-    <button
-      mat-button
-      mat-stroked-button
-      (click)="cancelEdit()"
-      [disabled]="!hasChanges()"
-    >
+    <button mat-button mat-stroked-button (click)="cancelEdit()" [disabled]="!hasChanges()">
       Cancel
     </button>
     <button mat-button mat-stroked-button (click)="addNewRow()">Add</button>
