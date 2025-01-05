@@ -1,4 +1,4 @@
-export type RowStatus = 'BeingAdded' | 'New' | 'Deleted' | 'Server';
+export type RowStatus = 'BeingAdded' | 'BeingEdited' | 'Edited' | 'New' | 'Deleted' | 'Server';
 
 export interface Skill {
   Name: string;

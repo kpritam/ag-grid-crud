@@ -13,6 +13,7 @@ export interface ActionCellRendererParams<TData extends { status?: RowStatus }>
   extends ICellRendererParams<TData> {
   deleteCallback: (context: MasterGridContext, data: TData) => void;
   undoDeleteCallback: (context: MasterGridContext, data: TData) => void;
+  saveChangesCallback: (context: MasterGridContext, data: TData) => void;
 }
 
 @Component({
@@ -27,9 +28,11 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
   params?: ActionCellRendererParams<TData>;
   isDeleted: boolean = false;
 
+  status?: RowStatus;
+
   agInit(params: ActionCellRendererParams<TData>): void {
     this.params = params;
-    this.isDeleted = this.params.data?.status === 'Deleted';
+    this.status = this.params.data?.status;
   }
 
   refresh(params: ActionCellRendererParams<TData>): boolean {
@@ -39,6 +42,8 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
   deleteRow(): void {
     const data = this.params?.data;
     if (data) {
+      this.status = 'Deleted';
+
       if (data.status === 'Server') {
         this.params?.node.setData({ ...data, status: 'Deleted' });
       }
@@ -46,11 +51,46 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
     }
   }
 
-  undoDelete(): void {
+  undoChanges(): void {
     const data = this.params?.data;
     if (data) {
+      this.status = 'Server';
+
       this.params?.node.setData({ ...data, status: 'Server' });
       this.params?.undoDeleteCallback(this.params.context, data);
+    }
+  }
+
+  editRow(): void {
+    console.log('Edit row');
+    const data = this.params?.data;
+    this.status = 'BeingEdited';
+
+    if (data) {
+      const beingEditedRow = { ...data, status: 'BeingEdited' };
+      this.params?.node.setData(beingEditedRow);
+    }
+  }
+
+  undoEdit(): void {
+    console.log('Undo Edit row');
+    const data = this.params?.data;
+    this.status = 'Server';
+
+    if (data) {
+      const serverRow = { ...data, status: 'Server' };
+      this.params?.node.setData(serverRow);
+    }
+  }
+
+  saveChanges(): void {
+    const data = this.params?.data;
+    if (data) {
+      this.status = 'Edited';
+      const editedRow = { ...data, status: 'Edited' };
+
+      this.params?.node.setData(editedRow);
+      this.params?.saveChangesCallback(this.params.context, editedRow);
     }
   }
 }

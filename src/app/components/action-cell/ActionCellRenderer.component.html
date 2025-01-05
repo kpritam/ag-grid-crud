@@ -1,5 +1,19 @@
-@if (isDeleted) {
-  <mat-icon (click)="undoDelete()" class="undo-icon">undo</mat-icon>
-} @else {
-  <mat-icon (click)="deleteRow()" class="delete-icon">delete</mat-icon>
+@switch (status) {
+  @case ('Deleted') {
+    <mat-icon (click)="undoChanges()" class="undo-icon icon">undo</mat-icon>
+  }
+
+  @case ('Edited') {
+    <mat-icon (click)="undoChanges()" class="undo-icon icon">undo</mat-icon>
+  }
+
+  @case ('BeingEdited') {
+    <mat-icon (click)="saveChanges()" class="save-icon icon">save</mat-icon>
+    <mat-icon (click)="undoChanges()" class="undo-icon icon">undo</mat-icon>
+  }
+
+  @default {
+    <mat-icon (click)="deleteRow()" class="delete-icon icon">delete</mat-icon>
+    <mat-icon (click)="editRow()" class="edit-icon icon">edit</mat-icon>
+  }
 }

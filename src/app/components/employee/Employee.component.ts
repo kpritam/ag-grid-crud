@@ -12,6 +12,7 @@ import {
   GetDetailRowDataParams,
   RowStyle,
   ICellRendererParams,
+  SuppressKeyboardEventParams,
 } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -42,26 +43,30 @@ export class EmployeeComponent {
   api?: GridApi<EmployeeData>;
 
   visitedRows = signal<EmployeeData[]>([]);
-  newRows = signal<EmployeeData[]>([]);
-  deletedRows = signal<EmployeeData[]>([]);
-  deletedSkills = signal<Record<number, Skill[]>>({});
+
   rowBeingAdded = signal<EmployeeData | null>(null);
+
+  editedRows = signal<EmployeeData[]>([]);
+
+  deletedSkills = signal<Record<number, Skill[]>>({});
 
   hasChanges = computed(
     () =>
       this.rowBeingAdded() !== null ||
-      this.newRows().length > 0 ||
-      this.deletedRows().length > 0 ||
+      this.editedRows().length > 0 ||
       Object.keys(this.deletedSkills()).length > 0,
   );
 
   rowModelType: RowModelType = 'serverSide';
 
+  defaultColDef = {
+    suppressKeyboardEvent,
+  };
+
   columnDefs: ColDef[] = [
     { field: 'group', cellRenderer: 'agGroupCellRenderer', flex: 0.1 },
     {
       field: 'EmployeeID',
-      editable: true,
       cellRendererSelector: (params) => ({
         ...this.inputCellRenderer<number>(params),
         params: {
@@ -72,7 +77,6 @@ export class EmployeeComponent {
     },
     {
       field: 'FirstName',
-      editable: true,
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
@@ -83,7 +87,6 @@ export class EmployeeComponent {
     },
     {
       field: 'LastName',
-      editable: true,
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
@@ -94,7 +97,6 @@ export class EmployeeComponent {
     },
     {
       field: 'Department',
-      editable: true,
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
@@ -105,7 +107,6 @@ export class EmployeeComponent {
     },
     {
       field: 'Salary',
-      editable: true,
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
@@ -119,17 +120,15 @@ export class EmployeeComponent {
       cellRenderer: ActionCellRenderer<EmployeeData>,
       cellRendererParams: {
         deleteCallback: (_, row) => this.deleteRowCallback(row),
-        undoDeleteCallback: (_, row) => this.undoDeleteCallback(row),
+        undoDeleteCallback: (_, row) => this.undoChangesCallback(row),
+        saveChangesCallback: (_, row) => this.saveChangesCallback(row),
       } as ActionCellRendererParams<EmployeeData>,
     },
   ];
 
   constructor() {
     effect(() => {
-      console.info('New Rows', this.newRows());
-    });
-    effect(() => {
-      console.info('Deleted Rows', this.deletedRows());
+      console.info('Edited Rows', this.editedRows());
     });
     effect(() => {
       console.info('Visited Rows', this.visitedRows());
@@ -165,18 +164,20 @@ export class EmployeeComponent {
   }
 
   deleteRowCallback = (data: EmployeeData) => {
-    if (data.status === 'New' || data.status === 'BeingAdded') {
-      this.newRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
-      this.api?.applyServerSideTransaction({ remove: [data] });
-    } else {
-      this.deletedRows.update((rows) => [...rows, { ...data, status: 'Deleted' }]);
-    }
+    const deletedRow = this.editedRows().find((row) => row.EmployeeID === data.EmployeeID);
+
+    deletedRow?.status === 'New' || deletedRow?.status === 'BeingAdded'
+      ? this.editedRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID))
+      : this.editedRows.update((rows) => [...rows, { ...data, status: 'Deleted' }]);
   };
 
-  undoDeleteCallback = (data: EmployeeData) => {
-    this.deletedRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
-    console.info('Undoing Delete', data);
-  };
+  undoChangesCallback = (data: EmployeeData) =>
+    this.editedRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
+
+  saveChangesCallback = (data: EmployeeData) =>
+    this.editedRows.update((rows) =>
+      rows.filter((row) => row.EmployeeID !== data.EmployeeID).concat(data),
+    );
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
@@ -188,7 +189,7 @@ export class EmployeeComponent {
           .find((node) => node.data?.EmployeeID === topRow?.EmployeeID);
 
         topNode?.setData({ ...topRow, status: 'New' });
-        this.newRows.update((row) => [{ ...topRow, status: 'New' }, ...row]);
+        this.editedRows.update((row) => [{ ...topRow, status: 'New' }, ...row]);
         this.rowBeingAdded.set(null);
       }
     }
@@ -196,7 +197,7 @@ export class EmployeeComponent {
 
   cancelEdit() {
     const topRow = this.rowBeingAdded();
-    const newRows = this.newRows();
+    const newRows = this.editedRows().filter((row) => row.status === 'New');
     const removeRows = topRow ? [topRow, ...newRows] : newRows;
     this.api?.applyServerSideTransaction({ remove: removeRows });
 
@@ -210,9 +211,7 @@ export class EmployeeComponent {
   }
 
   saveChanges() {
-    const newRows = this.newRows().filter((row) => row.status === 'New');
-    console.info('[S] New Rows', newRows);
-    console.info('[S] Deleted Rows', this.deletedRows());
+    console.info('[S] Changed Rows', this.editedRows());
     console.info('[S] Deleted Skills', this.deletedSkills());
 
     this.cleanState();
@@ -226,9 +225,10 @@ export class EmployeeComponent {
         console.log('Requesting rows from server', params.request);
         const startRow = params.request.startRow;
         const endRow = params.request.endRow;
+        const newRows = this.editedRows().filter((row) => row.status === 'New');
         if (startRow !== undefined && endRow !== undefined) {
-          const adjustedStart = Math.max(0, startRow - this.newRows().length);
-          const adjustedEnd = Math.max(0, endRow - this.newRows().length);
+          const adjustedStart = Math.max(0, startRow - newRows.length);
+          const adjustedEnd = Math.max(0, endRow - newRows.length);
 
           const data = EMPLOYEES.slice(adjustedStart, adjustedEnd);
           this.visitedRows.update((rows) => [...rows, ...data]);
@@ -259,7 +259,6 @@ export class EmployeeComponent {
             } as ActionCellRendererParams<Skill>,
           },
         ],
-        defaultColDef: { editable: true },
         getRowStyle: (params: RowClassParams<Skill>) => this.getRowStyle(params),
       },
       getDetailRowData: (params: GetDetailRowDataParams<EmployeeData>) => {
@@ -295,21 +294,115 @@ export class EmployeeComponent {
   };
 
   getRowStyle<T extends { status?: RowStatus }>(params: RowClassParams<T>): RowStyle {
-    if (params.data?.status === 'New') return { background: '#d4edda' };
-    if (params.data?.status === 'Deleted') return { background: '#f8d7da' };
+    const status = params.data?.status;
+
+    if (status === 'New') return { background: '#d4edda' };
+    if (status === 'Deleted') return { background: '#f8d7da' };
+    if (status === 'BeingEdited' || status === 'Edited') return { background: '#fff3cd' };
+
     return { background: 'white' };
   }
 
   private cleanState = () => {
-    this.newRows.set([]);
-    this.deletedRows.set([]);
+    this.editedRows.set([]);
     this.deletedSkills.set({});
     this.rowBeingAdded.set(null);
   };
 
   inputCellRenderer<T>(params: ICellRendererParams<EmployeeData>) {
-    return params.data?.status === 'BeingAdded'
+    return params.data?.status === 'BeingAdded' || params.data?.status === 'BeingEdited'
       ? { component: InputTextCellRendererComponent<T> }
       : undefined;
   }
+}
+
+const GRID_CELL_CLASSNAME = 'ag-cell';
+function getAllFocusableElementsOf(el: HTMLElement) {
+  return Array.from<HTMLElement>(
+    el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+  ).filter((focusableEl) => {
+    return focusableEl.tabIndex !== -1;
+  });
+}
+function getEventPath(event: Event): HTMLElement[] {
+  const path: HTMLElement[] = [];
+  let currentTarget: any = event.target;
+  while (currentTarget) {
+    path.push(currentTarget);
+    currentTarget = currentTarget.parentElement;
+  }
+  return path;
+}
+
+function getSibling(el: HTMLElement, direction: 'next' | 'previous') {
+  const sibling = direction === 'next' ? el.nextElementSibling : el.previousElementSibling;
+  return sibling ? (sibling as HTMLElement) : null;
+}
+
+/**
+ * Capture whether the user is tabbing forwards or backwards and suppress keyboard event if tabbing
+ * outside of the children
+ */
+function suppressKeyboardEvent({ event }: SuppressKeyboardEventParams<any>) {
+  const { key, shiftKey } = event;
+  const path = getEventPath(event);
+  const isTabForward = key === 'Tab' && shiftKey === false;
+  const isTabBackward = key === 'Tab' && shiftKey === true;
+  let suppressEvent = false;
+  // Handle cell children tabbing
+  if (isTabForward || isTabBackward) {
+    const eGridCell = path.find((el) => {
+      if (el.classList === undefined) return false;
+      return el.classList.contains(GRID_CELL_CLASSNAME);
+    });
+    if (!eGridCell) {
+      return suppressEvent;
+    }
+
+    const sibling = getSibling(eGridCell, isTabForward ? 'next' : 'previous');
+
+    if (!sibling) {
+      return suppressEvent;
+    }
+
+    const focusableChildrenElements = getAllFocusableElementsOf(sibling);
+    const lastCellChildEl = focusableChildrenElements[focusableChildrenElements.length - 1];
+    const firstCellChildEl = focusableChildrenElements[0];
+    // Suppress keyboard event if tabbing forward within the cell and the current focused element is not the last child
+    if (focusableChildrenElements.length === 0) {
+      return false;
+    }
+    const currentIndex = focusableChildrenElements.indexOf(document.activeElement as HTMLElement);
+    if (isTabForward) {
+      const isLastChildFocused = lastCellChildEl && document.activeElement === lastCellChildEl;
+      if (!isLastChildFocused) {
+        suppressEvent = true;
+        if (currentIndex !== -1 || document.activeElement === eGridCell) {
+          event.preventDefault();
+          focusableChildrenElements[currentIndex + 1].focus();
+        }
+      }
+    }
+    // Suppress keyboard event if tabbing backwards within the cell, and the current focused element is not the first child
+    else {
+      const cellHasFocusedChildren =
+        eGridCell.contains(document.activeElement) && eGridCell !== document.activeElement;
+      // Manually set focus to the last child element if cell doesn't have focused children
+      if (!cellHasFocusedChildren) {
+        lastCellChildEl.focus();
+        // Cancel keyboard press, so that it doesn't focus on the last child and then pass through the keyboard press to
+        // move to the 2nd last child element
+        event.preventDefault();
+      }
+      const isFirstChildFocused = firstCellChildEl && document.activeElement === firstCellChildEl;
+      if (!isFirstChildFocused) {
+        suppressEvent = true;
+        if (currentIndex !== -1 || document.activeElement === eGridCell) {
+          event.preventDefault();
+          focusableChildrenElements[currentIndex - 1].focus();
+        }
+      }
+    }
+  }
+  return suppressEvent;
 }

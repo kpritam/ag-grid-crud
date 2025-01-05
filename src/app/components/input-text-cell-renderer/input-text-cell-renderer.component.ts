@@ -38,20 +38,12 @@ export class InputTextCellRendererComponent<T = any> implements ICellRendererAng
   }
 
   onFocus() {
-    const idx = this.params.node.rowIndex;
-    const colId = this.params.column?.getColId();
-
-    if (idx !== undefined && idx !== null && colId) {
-      this.params.api.startEditingCell({
-        rowIndex: idx,
-        colKey: colId,
-      });
-    }
+    console.log('onFocus');
   }
 
   onBlur() {
+    console.log('onBlur');
     this.onInputChange();
-    this.params.api.stopEditing();
   }
 
   onInputChange() {
@@ -59,4 +51,16 @@ export class InputTextCellRendererComponent<T = any> implements ICellRendererAng
       this.params.node.setDataValue(this.params.column?.getColId(), this.inputValue);
     }
   }
+
+  // onKeyDown(event: KeyboardEvent) {
+  //   switch (event.key) {
+  //     case 'Tab':
+  //       event.preventDefault();
+  //       this.params.api.tabToNextCell(event);
+  //       break;
+
+  //     default:
+  //       break;
+  //   }
+  // }
 }
