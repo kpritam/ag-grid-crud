@@ -11,3 +11,11 @@
     gap: 10px;
   }
 }
+
+::ng-deep .ag-cell-expandable {
+  height: 100%;
+}
+
+::ng-deep .ag-group-contracted {
+  height: 100%;
+}

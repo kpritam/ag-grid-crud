@@ -8,6 +8,7 @@ import { RowStatus } from '../../api/employee';
 export interface InputTextCellRendererParams<T> extends ICellRendererParams<T> {
   initialValue?: T;
   placeholder?: string;
+  keypressCallback?: (event: KeyboardEvent) => void;
 }
 
 @Component({
@@ -49,5 +50,4 @@ export class InputTextCellRendererComponent<T> implements ICellRendererAngularCo
       this.params.node.setDataValue(this.params.column?.getColId(), this.inputValue);
     }
   }
-
 }

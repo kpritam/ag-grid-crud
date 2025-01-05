@@ -161,6 +161,8 @@ export class EmployeeComponent {
     this.rowBeingAdded.set(newRow);
 
     this.api?.applyServerSideTransaction({ addIndex: 0, add: [newRow] });
+    this.api?.getDisplayedRowAtIndex(0)?.setRowHeight(72);
+    this.api?.onRowHeightChanged();
   }
 
   deleteRowCallback = (data: EmployeeData) => {
@@ -205,6 +207,9 @@ export class EmployeeComponent {
           changedNode?.setData(changedData);
           this.rowEditingStopped(changedData);
         }
+
+        changedNode?.setRowHeight(42);
+        this.api?.onRowHeightChanged();
       }
     }
   }
@@ -313,6 +318,7 @@ export class EmployeeComponent {
   getRowStyle<T extends { status?: RowStatus }>(params: RowClassParams<T>): RowStyle {
     const status = params.data?.status;
 
+    if (status === 'BeingAdded') return { background: '#F6F8FA' };
     if (status === 'Added') return { background: '#d4edda' };
     if (status === 'Deleted') return { background: '#f8d7da' };
     if (status === 'BeingEdited' || status === 'Edited') return { background: '#fff3cd' };
