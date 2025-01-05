@@ -1,5 +1,5 @@
 {
-  "name": "ag-grid-demo",
+  "name": "ag-grid-crud",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",

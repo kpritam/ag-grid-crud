@@ -38,12 +38,9 @@ export class InputTextCellRendererComponent<T> implements ICellRendererAngularCo
     return false;
   }
 
-  onFocus() {
-    console.log('onFocus');
-  }
+  onFocus() {}
 
   onBlur() {
-    console.log('onBlur');
     this.onInputChange();
   }
 
@@ -53,14 +50,4 @@ export class InputTextCellRendererComponent<T> implements ICellRendererAngularCo
     }
   }
 
-  // onKeyDown(event: KeyboardEvent) {
-  // switch (event.key) {
-  //   case 'Enter':
-  //     this.onInputChange();
-  //     break;
-
-  //   default:
-  //     break;
-  // }
-  // }
 }

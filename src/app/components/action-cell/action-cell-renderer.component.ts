@@ -20,8 +20,8 @@ export interface ActionCellRendererParams<TData extends { status?: RowStatus }>
 @Component({
   selector: 'app-action-cell-renderer',
   imports: [MatIconModule],
-  templateUrl: './ActionCellRenderer.component.html',
-  styleUrls: ['./ActionCellRenderer.component.scss'],
+  templateUrl: './action-cell-renderer.component.html',
+  styleUrls: ['./action-cell-renderer.component.scss'],
 })
 export class ActionCellRenderer<TData extends { status?: RowStatus }>
   implements ICellRendererAngularComp

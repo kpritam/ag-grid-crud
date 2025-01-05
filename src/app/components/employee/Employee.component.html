@@ -4,7 +4,7 @@
       mat-button
       mat-stroked-button
       (click)="saveChanges()"
-      [disabled]="!hasChanges()"
+      [disabled]="!saveEnabled()"
     >
       Save
     </button>

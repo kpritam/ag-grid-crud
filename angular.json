@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "ag-grid-demo": {
+    "ag-grid-crud": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/ag-grid-demo",
+            "outputPath": "dist/ag-grid-crud",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -65,10 +65,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "ag-grid-demo:build:production"
+              "buildTarget": "ag-grid-crud:build:production"
             },
             "development": {
-              "buildTarget": "ag-grid-demo:build:development"
+              "buildTarget": "ag-grid-crud:build:development"
             }
           },
           "defaultConfiguration": "development"

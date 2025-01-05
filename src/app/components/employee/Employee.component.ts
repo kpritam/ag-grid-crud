@@ -1,4 +1,4 @@
-import { Component, computed, effect, HostListener, signal } from '@angular/core';
+import { Component, computed, effect, signal } from '@angular/core';
 import {
   GridReadyEvent,
   ColDef,
@@ -12,7 +12,6 @@ import {
   GetDetailRowDataParams,
   RowStyle,
   ICellRendererParams,
-  SuppressKeyboardEventParams,
   CellKeyDownEvent,
   FullWidthCellKeyDownEvent,
 } from 'ag-grid-community';
@@ -24,7 +23,7 @@ import {
   ActionCellRenderer,
   ActionCellRendererParams,
   MasterGridContext,
-} from '../action-cell/ActionCellRenderer.component';
+} from '../action-cell/action-cell-renderer.component';
 import { registerAgGridModules } from '../../ag-grid-module-register';
 import { EmployeeData, RowStatus, Skill } from '../../api/employee';
 import { EMPLOYEES, EMPTY_EMPLOYEE } from '../../api/data';
@@ -32,14 +31,15 @@ import {
   InputTextCellRendererComponent,
   InputTextCellRendererParams,
 } from '../input-text-cell-renderer/input-text-cell-renderer.component';
+import { suppressKeyboardEvent } from '../../utils/ag-keypress';
 
 registerAgGridModules();
 
 @Component({
   selector: 'app-employee',
   imports: [AgGridAngular, MatButtonModule, MatIconModule, CommonModule],
-  templateUrl: './Employee.component.html',
-  styleUrls: ['./Employee.component.scss'],
+  templateUrl: './employee.component.html',
+  styleUrls: ['./employee.component.scss'],
 })
 export class EmployeeComponent {
   api?: GridApi<EmployeeData>;
@@ -55,6 +55,12 @@ export class EmployeeComponent {
       this.rowBeingAdded() !== null ||
       this.editedRows().length > 0 ||
       Object.keys(this.deletedSkills()).length > 0,
+  );
+
+  saveEnabled = computed(
+    () =>
+      this.editedRows().filter((row) => row.status !== 'BeingAdded' && row.status !== 'BeingEdited')
+        .length > 0,
   );
 
   rowModelType: RowModelType = 'serverSide';
@@ -155,16 +161,12 @@ export class EmployeeComponent {
     this.rowBeingAdded.set(newRow);
 
     this.api?.applyServerSideTransaction({ addIndex: 0, add: [newRow] });
-
-    setTimeout(() => {
-      this.api?.startEditingCell({ rowIndex: 0, colKey: 'EmployeeID' });
-    }, 100);
   }
 
   deleteRowCallback = (data: EmployeeData) => {
     const deletedRow = this.editedRows().find((row) => row.EmployeeID === data.EmployeeID);
 
-    deletedRow?.status === 'New' || deletedRow?.status === 'BeingAdded'
+    deletedRow?.status === 'Added' || deletedRow?.status === 'BeingAdded'
       ? this.editedRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID))
       : this.editedRows.update((rows) => [...rows, { ...data, status: 'Deleted' }]);
   };
@@ -194,8 +196,8 @@ export class EmployeeComponent {
           .find((node) => node.data?.EmployeeID === changedRow?.EmployeeID);
 
         if (changedRow.status === 'BeingAdded') {
-          changedNode?.setData({ ...changedRow, status: 'New' });
-          this.editedRows.update((row) => [{ ...changedRow, status: 'New' }, ...row]);
+          changedNode?.setData({ ...changedRow, status: 'Added' });
+          this.editedRows.update((row) => [{ ...changedRow, status: 'Added' }, ...row]);
           this.rowBeingAdded.set(null);
         } else if (changedRow.status === 'BeingEdited') {
           const changedData: EmployeeData = { ...changedRow, status: 'Edited' };
@@ -209,14 +211,19 @@ export class EmployeeComponent {
 
   cancelEdit() {
     const topRow = this.rowBeingAdded();
-    const newRows = this.editedRows().filter((row) => row.status === 'New');
+    const newRows = this.editedRows().filter((row) => row.status === 'Added');
     const removeRows = topRow ? [topRow, ...newRows] : newRows;
     this.api?.applyServerSideTransaction({ remove: removeRows });
 
     this.cleanState();
 
     this.api?.getRenderedNodes().forEach((node) => {
-      if (node.data?.status === 'New' || node.data?.status === 'Deleted') {
+      if (
+        node.data?.status === 'Added' ||
+        node.data?.status === 'Deleted' ||
+        node.data?.status === 'Edited' ||
+        node.data?.status === 'BeingEdited'
+      ) {
         node.setData({ ...node.data, status: 'Server' });
       }
     });
@@ -227,7 +234,6 @@ export class EmployeeComponent {
     console.info('[S] Deleted Skills', this.deletedSkills());
 
     this.cleanState();
-
     this.api?.refreshServerSide();
   }
 
@@ -237,7 +243,7 @@ export class EmployeeComponent {
         console.log('Requesting rows from server', params.request);
         const startRow = params.request.startRow;
         const endRow = params.request.endRow;
-        const newRows = this.editedRows().filter((row) => row.status === 'New');
+        const newRows = this.editedRows().filter((row) => row.status === 'Added');
         if (startRow !== undefined && endRow !== undefined) {
           const adjustedStart = Math.max(0, startRow - newRows.length);
           const adjustedEnd = Math.max(0, endRow - newRows.length);
@@ -307,7 +313,7 @@ export class EmployeeComponent {
   getRowStyle<T extends { status?: RowStatus }>(params: RowClassParams<T>): RowStyle {
     const status = params.data?.status;
 
-    if (status === 'New') return { background: '#d4edda' };
+    if (status === 'Added') return { background: '#d4edda' };
     if (status === 'Deleted') return { background: '#f8d7da' };
     if (status === 'BeingEdited' || status === 'Edited') return { background: '#fff3cd' };
 
@@ -325,95 +331,4 @@ export class EmployeeComponent {
       ? { component: InputTextCellRendererComponent<T> }
       : undefined;
   }
-}
-
-const GRID_CELL_CLASSNAME = 'ag-cell';
-function getAllFocusableElementsOf(el: HTMLElement) {
-  return Array.from<HTMLElement>(
-    el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
-  ).filter((focusableEl) => {
-    return focusableEl.tabIndex !== -1;
-  });
-}
-function getEventPath(event: Event): HTMLElement[] {
-  const path: HTMLElement[] = [];
-  let currentTarget: any = event.target;
-  while (currentTarget) {
-    path.push(currentTarget);
-    currentTarget = currentTarget.parentElement;
-  }
-  return path;
-}
-
-function getSibling(el: HTMLElement, direction: 'next' | 'previous') {
-  const sibling = direction === 'next' ? el.nextElementSibling : el.previousElementSibling;
-  return sibling ? (sibling as HTMLElement) : null;
-}
-
-/**
- * Capture whether the user is tabbing forwards or backwards and suppress keyboard event if tabbing
- * outside of the children
- */
-function suppressKeyboardEvent({ event }: SuppressKeyboardEventParams<any>) {
-  const { key, shiftKey } = event;
-  const path = getEventPath(event);
-  const isTabForward = key === 'Tab' && shiftKey === false;
-  const isTabBackward = key === 'Tab' && shiftKey === true;
-  let suppressEvent = false;
-  // Handle cell children tabbing
-  if (isTabForward || isTabBackward) {
-    const eGridCell = path.find((el) => {
-      if (el.classList === undefined) return false;
-      return el.classList.contains(GRID_CELL_CLASSNAME);
-    });
-    if (!eGridCell) {
-      return suppressEvent;
-    }
-
-    const sibling = getSibling(eGridCell, isTabForward ? 'next' : 'previous');
-
-    if (!sibling) {
-      return suppressEvent;
-    }
-
-    const focusableChildrenElements = getAllFocusableElementsOf(sibling);
-    const lastCellChildEl = focusableChildrenElements[focusableChildrenElements.length - 1];
-    const firstCellChildEl = focusableChildrenElements[0];
-    // Suppress keyboard event if tabbing forward within the cell and the current focused element is not the last child
-    if (focusableChildrenElements.length === 0) {
-      return false;
-    }
-    const currentIndex = focusableChildrenElements.indexOf(document.activeElement as HTMLElement);
-    if (isTabForward) {
-      const isLastChildFocused = lastCellChildEl && document.activeElement === lastCellChildEl;
-      if (!isLastChildFocused) {
-        suppressEvent = true;
-        if (currentIndex !== -1 || document.activeElement === eGridCell) {
-          event.preventDefault();
-          focusableChildrenElements[currentIndex + 1].focus();
-        }
-      }
-    }
-    // Suppress keyboard event if tabbing backwards within the cell, and the current focused element is not the first child
-    else {
-      const cellHasFocusedChildren =
-        eGridCell.contains(document.activeElement) && eGridCell !== document.activeElement;
-      // Manually set focus to the last child element if cell doesn't have focused children
-      if (!cellHasFocusedChildren) {
-        lastCellChildEl.focus();
-        // Cancel keyboard press, so that it doesn't focus on the last child and then pass through the keyboard press to
-        // move to the 2nd last child element
-        event.preventDefault();
-      }
-      const isFirstChildFocused = firstCellChildEl && document.activeElement === firstCellChildEl;
-      if (!isFirstChildFocused) {
-        suppressEvent = true;
-        if (currentIndex !== -1 || document.activeElement === eGridCell) {
-          event.preventDefault();
-          focusableChildrenElements[currentIndex - 1].focus();
-        }
-      }
-    }
-  }
-  return suppressEvent;
 }
