@@ -13,6 +13,8 @@ import {
   RowStyle,
   ICellRendererParams,
   SuppressKeyboardEventParams,
+  CellKeyDownEvent,
+  FullWidthCellKeyDownEvent,
 } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -41,8 +43,6 @@ registerAgGridModules();
 })
 export class EmployeeComponent {
   api?: GridApi<EmployeeData>;
-
-  visitedRows = signal<EmployeeData[]>([]);
 
   rowBeingAdded = signal<EmployeeData | null>(null);
 
@@ -121,7 +121,8 @@ export class EmployeeComponent {
       cellRendererParams: {
         deleteCallback: (_, row) => this.deleteRowCallback(row),
         undoDeleteCallback: (_, row) => this.undoChangesCallback(row),
-        saveChangesCallback: (_, row) => this.saveChangesCallback(row),
+        rowEditingStarted: (_, row) => this.rowEditingStarted(row),
+        rowEditingStopped: (_, row) => this.rowEditingStopped(row),
       } as ActionCellRendererParams<EmployeeData>,
     },
   ];
@@ -129,9 +130,6 @@ export class EmployeeComponent {
   constructor() {
     effect(() => {
       console.info('Edited Rows', this.editedRows());
-    });
-    effect(() => {
-      console.info('Visited Rows', this.visitedRows());
     });
     effect(() => {
       console.info('Deleted Skills', this.deletedSkills());
@@ -174,23 +172,37 @@ export class EmployeeComponent {
   undoChangesCallback = (data: EmployeeData) =>
     this.editedRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
 
-  saveChangesCallback = (data: EmployeeData) =>
+  rowEditingStarted = (data: EmployeeData) =>
     this.editedRows.update((rows) =>
       rows.filter((row) => row.EmployeeID !== data.EmployeeID).concat(data),
     );
 
-  @HostListener('window:keydown', ['$event'])
-  handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Enter' && this.hasChanges()) {
-      const topRow = this.rowBeingAdded();
-      if (topRow) {
-        const topNode = this.api
-          ?.getRenderedNodes()
-          .find((node) => node.data?.EmployeeID === topRow?.EmployeeID);
+  rowEditingStopped = (data: EmployeeData) =>
+    this.editedRows.update((rows) =>
+      rows.filter((row) => row.EmployeeID !== data.EmployeeID).concat(data),
+    );
 
-        topNode?.setData({ ...topRow, status: 'New' });
-        this.editedRows.update((row) => [{ ...topRow, status: 'New' }, ...row]);
-        this.rowBeingAdded.set(null);
+  onCellKeyDown(event: CellKeyDownEvent<EmployeeData> | FullWidthCellKeyDownEvent<EmployeeData>) {
+    const keyboardEvent = event.event as KeyboardEvent;
+
+    if (keyboardEvent.key === 'Enter' && this.hasChanges()) {
+      const changedRow = event.data;
+
+      if (changedRow) {
+        const changedNode = this.api
+          ?.getRenderedNodes()
+          .find((node) => node.data?.EmployeeID === changedRow?.EmployeeID);
+
+        if (changedRow.status === 'BeingAdded') {
+          changedNode?.setData({ ...changedRow, status: 'New' });
+          this.editedRows.update((row) => [{ ...changedRow, status: 'New' }, ...row]);
+          this.rowBeingAdded.set(null);
+        } else if (changedRow.status === 'BeingEdited') {
+          const changedData: EmployeeData = { ...changedRow, status: 'Edited' };
+
+          changedNode?.setData(changedData);
+          this.rowEditingStopped(changedData);
+        }
       }
     }
   }
@@ -231,7 +243,6 @@ export class EmployeeComponent {
           const adjustedEnd = Math.max(0, endRow - newRows.length);
 
           const data = EMPLOYEES.slice(adjustedStart, adjustedEnd);
-          this.visitedRows.update((rows) => [...rows, ...data]);
           params.success({ rowData: data });
         }
       },

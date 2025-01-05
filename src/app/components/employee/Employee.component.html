@@ -33,6 +33,7 @@
     [masterDetail]="true"
     [detailCellRendererParams]="detailCellRendererParams"
     [defaultColDef]="defaultColDef"
+    (cellKeyDown)="onCellKeyDown($event)"
   >
   </ag-grid-angular>
 </div>

@@ -13,7 +13,8 @@ export interface ActionCellRendererParams<TData extends { status?: RowStatus }>
   extends ICellRendererParams<TData> {
   deleteCallback: (context: MasterGridContext, data: TData) => void;
   undoDeleteCallback: (context: MasterGridContext, data: TData) => void;
-  saveChangesCallback: (context: MasterGridContext, data: TData) => void;
+  rowEditingStarted: (context: MasterGridContext, data: TData) => void;
+  rowEditingStopped: (context: MasterGridContext, data: TData) => void;
 }
 
 @Component({
@@ -26,16 +27,17 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
   implements ICellRendererAngularComp
 {
   params?: ActionCellRendererParams<TData>;
-  isDeleted: boolean = false;
 
   status?: RowStatus;
 
   agInit(params: ActionCellRendererParams<TData>): void {
     this.params = params;
-    this.status = this.params.data?.status;
+    this.status = params.data?.status;
   }
 
   refresh(params: ActionCellRendererParams<TData>): boolean {
+    this.params = params;
+    this.status = params.data?.status;
     return true;
   }
 
@@ -44,18 +46,19 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
     if (data) {
       this.status = 'Deleted';
 
-      if (data.status === 'Server') {
-        this.params?.node.setData({ ...data, status: 'Deleted' });
-      }
+      data.status === 'Server'
+        ? this.params?.node.setData({ ...data, status: 'Deleted' })
+        : this.params?.api.applyServerSideTransaction({ remove: [data] });
+
       this.params?.deleteCallback(this.params?.context, data);
     }
   }
 
   undoChanges(): void {
+    this.status = 'Server';
     const data = this.params?.data;
-    if (data) {
-      this.status = 'Server';
 
+    if (data) {
       this.params?.node.setData({ ...data, status: 'Server' });
       this.params?.undoDeleteCallback(this.params.context, data);
     }
@@ -67,8 +70,9 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
     this.status = 'BeingEdited';
 
     if (data) {
-      const beingEditedRow = { ...data, status: 'BeingEdited' };
-      this.params?.node.setData(beingEditedRow);
+      const rowBeingEdited = { ...data, status: 'BeingEdited' };
+      this.params?.node.setData(rowBeingEdited);
+      this.params?.rowEditingStarted(this.params.context, rowBeingEdited);
     }
   }
 
@@ -90,7 +94,7 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
       const editedRow = { ...data, status: 'Edited' };
 
       this.params?.node.setData(editedRow);
-      this.params?.saveChangesCallback(this.params.context, editedRow);
+      this.params?.rowEditingStopped(this.params.context, editedRow);
     }
   }
 }

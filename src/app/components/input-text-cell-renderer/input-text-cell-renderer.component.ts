@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-enterprise';
+import { RowStatus } from '../../api/employee';
 
 export interface InputTextCellRendererParams<T> extends ICellRendererParams<T> {
   initialValue?: T;
@@ -15,7 +16,7 @@ export interface InputTextCellRendererParams<T> extends ICellRendererParams<T> {
   templateUrl: './input-text-cell-renderer.component.html',
   styleUrl: './input-text-cell-renderer.component.scss',
 })
-export class InputTextCellRendererComponent<T = any> implements ICellRendererAngularComp {
+export class InputTextCellRendererComponent<T> implements ICellRendererAngularComp {
   params!: InputTextCellRendererParams<T>;
 
   inputValue?: T;
@@ -53,14 +54,13 @@ export class InputTextCellRendererComponent<T = any> implements ICellRendererAng
   }
 
   // onKeyDown(event: KeyboardEvent) {
-  //   switch (event.key) {
-  //     case 'Tab':
-  //       event.preventDefault();
-  //       this.params.api.tabToNextCell(event);
-  //       break;
+  // switch (event.key) {
+  //   case 'Enter':
+  //     this.onInputChange();
+  //     break;
 
-  //     default:
-  //       break;
-  //   }
+  //   default:
+  //     break;
+  // }
   // }
 }
