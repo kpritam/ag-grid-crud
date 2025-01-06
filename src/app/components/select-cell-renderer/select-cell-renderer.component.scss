@@ -10,6 +10,11 @@
     background-color: #fff;
   }
 
+
+  .search-option {
+    height: 30px;
+  }
+
   @include mat.form-field-overrides(
     (
       container-height: 33.25px,
@@ -20,4 +25,21 @@
       outlined-label-text-populated-size: 14px,
     )
   );
+
+  @include mat.select-overrides(
+    (
+      placeholder-text-color: #A3A3A3,
+      trigger-text-size: 14px,
+    )
+  );
+}
+
+::ng-deep {
+  .mat-mdc-option {
+    font-size: 14px !important;
+  }
+
+  .mat-mdc-select-panel {
+    background-color: #fff !important;
+  }
 }

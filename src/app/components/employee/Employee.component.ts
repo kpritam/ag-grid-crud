@@ -14,6 +14,7 @@ import {
   ICellRendererParams,
   CellKeyDownEvent,
   FullWidthCellKeyDownEvent,
+  IRowNode,
 } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -47,6 +48,11 @@ const ROW_COLORS = {
   DEFAULT: 'white',
 };
 
+type EditedRow = {
+  original: EmployeeData;
+  updated: EmployeeData;
+};
+
 @Component({
   selector: 'app-employee',
   imports: [AgGridAngular, MatButtonModule, MatIconModule, CommonModule],
@@ -55,12 +61,10 @@ const ROW_COLORS = {
 })
 export class EmployeeComponent {
   api?: GridApi<EmployeeData>;
-
   rowBeingAdded = signal<EmployeeData | null>(null);
-
-  editedRows = signal<EmployeeData[]>([]);
-
+  editedRows = signal<EditedRow[]>([]);
   deletedSkills = signal<Record<number, Skill[]>>({});
+  rowModelType: RowModelType = 'serverSide';
 
   hasChanges = computed(
     () =>
@@ -71,11 +75,10 @@ export class EmployeeComponent {
 
   saveEnabled = computed(
     () =>
-      this.editedRows().filter((row) => row.status !== 'BeingAdded' && row.status !== 'BeingEdited')
-        .length > 0,
+      this.editedRows().filter(
+        (row) => row.updated.status !== 'BeingAdded' && row.updated.status !== 'BeingEdited',
+      ).length > 0,
   );
-
-  rowModelType: RowModelType = 'serverSide';
 
   defaultColDef = {
     suppressKeyboardEvent,
@@ -143,7 +146,7 @@ export class EmployeeComponent {
       cellRenderer: ActionCellRenderer<EmployeeData>,
       cellRendererParams: {
         deleteCallback: (_, row) => this.deleteRowCallback(row),
-        undoDeleteCallback: (_, row) => this.undoChangesCallback(row),
+        undoEditCallback: (_, row) => this.undoChangesCallback(row),
         rowEditingStarted: (_, row) => this.rowEditingStarted(row),
         rowEditingStopped: (_, row) => this.rowEditingStopped(row),
       } as ActionCellRendererParams<EmployeeData>,
@@ -183,25 +186,58 @@ export class EmployeeComponent {
   }
 
   deleteRowCallback = (data: EmployeeData) => {
-    const deletedRow = this.editedRows().find((row) => row.EmployeeID === data.EmployeeID);
+    const deletedRow = this.editedRows().find((row) => row.updated.EmployeeID === data.EmployeeID);
 
-    deletedRow?.status === 'Added' || deletedRow?.status === 'BeingAdded'
-      ? this.editedRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID))
-      : this.editedRows.update((rows) => [...rows, { ...data, status: 'Deleted' }]);
+    deletedRow?.updated.status === 'Added' || deletedRow?.updated.status === 'BeingAdded'
+      ? this.editedRows.update((rows) =>
+          rows.filter((row) => row.updated.EmployeeID !== data.EmployeeID),
+        )
+      : this.editedRows.update((rows) => [
+          ...rows,
+          { original: { ...data }, updated: { ...data, status: 'Deleted' } },
+        ]);
   };
 
-  undoChangesCallback = (data: EmployeeData) =>
-    this.editedRows.update((rows) => rows.filter((row) => row.EmployeeID !== data.EmployeeID));
-
-  rowEditingStarted = (data: EmployeeData) =>
-    this.editedRows.update((rows) =>
-      rows.filter((row) => row.EmployeeID !== data.EmployeeID).concat(data),
+  undoChangesCallback = (node: IRowNode<EmployeeData>) => {
+    const editedRow = this.editedRows().find(
+      (row) => row.updated.EmployeeID === node.data?.EmployeeID,
     );
 
-  rowEditingStopped = (data: EmployeeData) =>
-    this.editedRows.update((rows) =>
-      rows.filter((row) => row.EmployeeID !== data.EmployeeID).concat(data),
+    const currentStatus = editedRow?.updated.status;
+
+    if (
+      editedRow &&
+      (currentStatus === 'Deleted' || currentStatus === 'Edited' || currentStatus === 'BeingEdited')
+    ) {
+      node.setData({ ...editedRow.original, status: 'Server' });
+    }
+
+    return this.editedRows.update((rows) =>
+      rows.filter((row) => row.updated.EmployeeID !== node.data?.EmployeeID),
     );
+  };
+
+  rowEditingStarted = (data: EmployeeData) => {
+    return this.editedRows.update((rows) =>
+      rows
+        .filter((row) => row.updated.EmployeeID !== data.EmployeeID)
+        .concat({ original: { ...data, status: 'Server' }, updated: { ...data } }),
+    );
+  };
+
+  rowEditingStopped = (data: EmployeeData) => {
+    const originalRow = this.editedRows().find((row) => row.updated.EmployeeID === data.EmployeeID);
+
+    if (originalRow) {
+      const original: EmployeeData = { ...originalRow.original, status: 'Server' };
+
+      this.editedRows.update((rows) =>
+        rows
+          .filter((row) => row.updated.EmployeeID !== data.EmployeeID)
+          .concat({ original: { ...original, status: 'Server' }, updated: { ...data } }),
+      );
+    }
+  };
 
   onCellKeyDown(event: CellKeyDownEvent<EmployeeData> | FullWidthCellKeyDownEvent<EmployeeData>) {
     const keyboardEvent = event.event as KeyboardEvent;
@@ -221,7 +257,10 @@ export class EmployeeComponent {
           }
 
           changedNode?.setData({ ...changedRow, status: 'Added' });
-          this.editedRows.update((row) => [{ ...changedRow, status: 'Added' }, ...row]);
+          this.editedRows.update((row) => [
+            { original: { ...changedRow }, updated: { ...changedRow, status: 'Added' } },
+            ...row,
+          ]);
           this.rowBeingAdded.set(null);
         } else if (changedRow.status === 'BeingEdited') {
           const changedData: EmployeeData = { ...changedRow, status: 'Edited' };
@@ -238,7 +277,7 @@ export class EmployeeComponent {
 
   cancelEdit() {
     const topRow = this.rowBeingAdded();
-    const newRows = this.editedRows().filter((row) => row.status === 'Added');
+    const newRows = this.editedRows().filter((row) => row.updated.status === 'Added');
     const removeRows = topRow ? [topRow, ...newRows] : newRows;
     this.api?.applyServerSideTransaction({ remove: removeRows });
 
@@ -270,7 +309,7 @@ export class EmployeeComponent {
         console.log('Requesting rows from server', params.request);
         const startRow = params.request.startRow;
         const endRow = params.request.endRow;
-        const newRows = this.editedRows().filter((row) => row.status === 'Added');
+        const newRows = this.editedRows().filter((row) => row.updated.status === 'Added');
         if (startRow !== undefined && endRow !== undefined) {
           const adjustedStart = Math.max(0, startRow - newRows.length);
           const adjustedEnd = Math.max(0, endRow - newRows.length);
@@ -299,7 +338,7 @@ export class EmployeeComponent {
             cellRenderer: ActionCellRenderer<Skill>,
             cellRendererParams: {
               deleteCallback: (ctx, row) => this.deleteSkillCallback(ctx, row),
-              undoDeleteCallback: (ctx, row) => this.undoDeleteSkillCallback(ctx, row),
+              undoEditCallback: (ctx, row) => this.undoDeleteSkillCallback(ctx, row),
             } as ActionCellRendererParams<Skill>,
           },
         ],
@@ -326,11 +365,11 @@ export class EmployeeComponent {
     });
   };
 
-  undoDeleteSkillCallback = (ctx: MasterGridContext, data: Skill) => {
+  undoDeleteSkillCallback = (ctx: MasterGridContext, data: IRowNode<Skill>) => {
     this.deletedSkills.update((skillsMap) => {
       const empId = ctx.masterGrid.node.data.EmployeeID;
       const skills = skillsMap[empId] || [];
-      const updatedSkills = skills.filter((skill) => skill.Name !== data.Name);
+      const updatedSkills = skills.filter((skill) => skill.Name !== data.data?.Name);
       return updatedSkills.length > 0
         ? { ...skillsMap, [empId]: updatedSkills }
         : (({ [empId]: _, ...rest }) => rest)(skillsMap);
@@ -361,7 +400,7 @@ export class EmployeeComponent {
       : undefined;
   }
 
-  selectCellRenderer<TValue>(params: ICellRendererParams<EmployeeData>) {
+  selectCellRenderer<TValue extends string | number>(params: ICellRendererParams<EmployeeData>) {
     return params.data?.status === 'BeingAdded' || params.data?.status === 'BeingEdited'
       ? SelectCellRenderer<EmployeeData, TValue>
       : undefined;

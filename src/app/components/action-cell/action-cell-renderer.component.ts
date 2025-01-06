@@ -12,7 +12,7 @@ export type MasterGridContext = {
 export interface ActionCellRendererParams<TData extends { status?: RowStatus }>
   extends ICellRendererParams<TData> {
   deleteCallback: (context: MasterGridContext, data: TData) => void;
-  undoDeleteCallback: (context: MasterGridContext, data: TData) => void;
+  undoEditCallback: (context: MasterGridContext, node: IRowNode<TData>) => void;
   rowEditingStarted: (context: MasterGridContext, data: TData) => void;
   rowEditingStopped: (context: MasterGridContext, data: TData) => void;
 }
@@ -56,16 +56,14 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
 
   undoChanges(): void {
     this.status = 'Server';
-    const data = this.params?.data;
+    const node = this.params?.node;
 
-    if (data) {
-      this.params?.node.setData({ ...data, status: 'Server' });
-      this.params?.undoDeleteCallback(this.params.context, data);
+    if (node) {
+      this.params?.undoEditCallback(this.params.context, node);
     }
   }
 
   editRow(): void {
-    console.log('Edit row');
     const data = this.params?.data;
     this.status = 'BeingEdited';
 
@@ -73,17 +71,6 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
       const rowBeingEdited = { ...data, status: 'BeingEdited' };
       this.params?.node.setData(rowBeingEdited);
       this.params?.rowEditingStarted(this.params.context, rowBeingEdited);
-    }
-  }
-
-  undoEdit(): void {
-    console.log('Undo Edit row');
-    const data = this.params?.data;
-    this.status = 'Server';
-
-    if (data) {
-      const serverRow = { ...data, status: 'Server' };
-      this.params?.node.setData(serverRow);
     }
   }
 

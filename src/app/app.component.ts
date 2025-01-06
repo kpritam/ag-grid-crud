@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { EmployeeComponent } from './components/employee/employee.component';
+import { EmployeeComponent } from './components/employee/Employee.component';
 
 @Component({
   selector: 'app-root',
