@@ -1,0 +1,13 @@
+<mat-form-field class="input"
+[ngClass]="{
+  'row-being-added': params()?.data?.status === 'BeingAdded',
+  'invalid-input': params()?.required && !selectedValue,
+}"
+appearance="outline" subscriptSizing="dynamic">
+  @if(!selectedValue) { <mat-label>{{placeholder()}}</mat-label>}
+  <mat-select class="select" [(value)]="selectedValue" required>
+    @for (option of options(); track option) {
+      <mat-option [value]="option">{{option}}</mat-option>
+    }
+  </mat-select>
+</mat-form-field>

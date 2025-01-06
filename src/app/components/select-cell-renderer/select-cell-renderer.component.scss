@@ -1,0 +1,23 @@
+@use '@angular/material' as mat;
+
+:host {
+  display: flex;
+  align-items: center;
+  height: 100%;
+
+  .input {
+    height: 2rem;
+    background-color: #fff;
+  }
+
+  @include mat.form-field-overrides(
+    (
+      container-height: 33.25px,
+      container-vertical-padding: 4px,
+      outlined-label-text-size: 14px,
+      filled-container-color: #fff,
+      filled-label-text-size: 14px,
+      outlined-label-text-populated-size: 14px,
+    )
+  );
+}

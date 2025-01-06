@@ -32,8 +32,20 @@ import {
   InputTextCellRendererParams,
 } from '../input-text-cell-renderer/input-text-cell-renderer.component';
 import { suppressKeyboardEvent } from '../../utils/ag-keypress';
+import {
+  SelectCellRenderer,
+  SelectCellRendererParams,
+} from '../select-cell-renderer/select-cell-renderer.component';
 
 registerAgGridModules();
+
+const ROW_COLORS = {
+  BEING_ADDED: '#F6F8FA',
+  ADDED: '#d4edda',
+  DELETED: '#f8d7da',
+  BEING_EDITED: '#fff3cd',
+  DEFAULT: 'white',
+};
 
 @Component({
   selector: 'app-employee',
@@ -106,12 +118,14 @@ export class EmployeeComponent {
     {
       field: 'Department',
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
-        ...this.inputCellRenderer<string>(params),
+        component: this.selectCellRenderer<string>(params),
         params: {
+          ...params,
           initialValue: params.data?.Department,
-          placeholder: 'Dept',
+          placeholder: 'Department',
+          options: ['HR', 'IT', 'Finance', 'Admin', 'Engineering'],
           required: true,
-        } as InputTextCellRendererParams<EmployeeData, string>,
+        } as SelectCellRendererParams<EmployeeData, string>,
       }),
     },
     {
@@ -326,12 +340,13 @@ export class EmployeeComponent {
   getRowStyle<T extends { status?: RowStatus }>(params: RowClassParams<T>): RowStyle {
     const status = params.data?.status;
 
-    if (status === 'BeingAdded') return { background: '#F6F8FA' };
-    if (status === 'Added') return { background: '#d4edda' };
-    if (status === 'Deleted') return { background: '#f8d7da' };
-    if (status === 'BeingEdited' || status === 'Edited') return { background: '#fff3cd' };
+    if (status === 'BeingAdded') return { background: ROW_COLORS.BEING_ADDED };
+    if (status === 'Added') return { background: ROW_COLORS.ADDED };
+    if (status === 'Deleted') return { background: ROW_COLORS.DELETED };
+    if (status === 'BeingEdited' || status === 'Edited')
+      return { background: ROW_COLORS.BEING_EDITED };
 
-    return { background: 'white' };
+    return { background: ROW_COLORS.DEFAULT };
   }
 
   private cleanState = () => {
@@ -343,6 +358,12 @@ export class EmployeeComponent {
   inputCellRenderer<TValue>(params: ICellRendererParams<EmployeeData>) {
     return params.data?.status === 'BeingAdded' || params.data?.status === 'BeingEdited'
       ? { component: InputTextCellRendererComponent<EmployeeData, TValue> }
+      : undefined;
+  }
+
+  selectCellRenderer<TValue>(params: ICellRendererParams<EmployeeData>) {
+    return params.data?.status === 'BeingAdded' || params.data?.status === 'BeingEdited'
+      ? SelectCellRenderer<EmployeeData, TValue>
       : undefined;
   }
 }
