@@ -36,7 +36,7 @@ import {
   SelectCellRenderer,
   SelectCellRendererParams,
 } from '../select-cell-renderer/select-cell-renderer.component';
-import { FormGroup, FormControl } from '@angular/forms';
+import { FormGroup, FormControl, Validators, FormBuilder } from '@angular/forms';
 
 registerAgGridModules();
 
@@ -68,12 +68,14 @@ export class EmployeeComponent {
   deletedSkills = signal<Record<number, Skill[]>>({});
   rowModelType: RowModelType = 'serverSide';
 
-  rowForm = new FormGroup({
-    empId: new FormControl<number | undefined>(undefined),
-    firsName: new FormControl<string | undefined>(undefined),
-    lastName: new FormControl<string | undefined>(undefined),
-    department: new FormControl<string | undefined>(undefined),
-    salary: new FormControl<number | undefined>(undefined),
+  private fb: FormBuilder = new FormBuilder();
+
+  rowForm = this.fb.group({
+    empId: [undefined, Validators.required],
+    firsName: [undefined, Validators.required],
+    lastName: [undefined],
+    department: [undefined, Validators.required],
+    salary: [undefined],
   });
 
   hasChanges = computed(
@@ -107,7 +109,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params) => ({
         ...this.inputCellRenderer<number>(params),
         params: {
-          formControl: this.rowForm.get('empId') as FormControl<number>,
+          formControl: this.rowForm.controls.empId,
           initialValue: params.data.EmployeeID,
           placeholder: 'Emp Id',
           required: true,
@@ -120,7 +122,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
-          formControl: this.rowForm.get('firsName') as FormControl<string>,
+          formControl: this.rowForm.controls.firsName,
           initialValue: params.data?.FirstName,
           placeholder: 'First',
           required: true,
@@ -133,7 +135,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
-          formControl: this.rowForm.get('lastName') as FormControl<string>,
+          formControl: this.rowForm.controls.lastName,
           initialValue: params.data?.LastName,
           placeholder: 'Last',
         } as InputCellParams<EmployeeData, string>,
@@ -145,7 +147,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         component: this.selectCellRenderer<string>(params),
         params: {
-          formControl: this.rowForm.get('department') as FormControl<string>,
+          formControl: this.rowForm.controls.department,
           ...params,
           initialValue: params.data?.Department,
           placeholder: 'Department',
@@ -160,7 +162,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
-          formControl: this.rowForm.get('salary') as FormControl<number>,
+          formControl: this.rowForm.controls.salary,
           initialValue: params.data?.Salary,
           placeholder: 'Salary',
         } as InputCellParams<EmployeeData, number>,
@@ -180,6 +182,8 @@ export class EmployeeComponent {
   ];
 
   constructor() {
+    this.rowForm.controls.empId;
+
     effect(() => {
       console.info('Edited Rows', this.editedRows());
     });
