@@ -15,6 +15,9 @@ import {
   CellKeyDownEvent,
   FullWidthCellKeyDownEvent,
   IRowNode,
+  CellDoubleClickedEvent,
+  RowClickedEvent,
+  CellClickedEvent,
 } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,6 +42,8 @@ import {
 } from '../select-cell-renderer/select-cell-renderer.component';
 
 registerAgGridModules();
+
+type MyColDef = ColDef & { canEdit: boolean };
 
 const ROW_COLORS = {
   BEING_ADDED: '#F6F8FA',
@@ -80,14 +85,20 @@ export class EmployeeComponent {
       ).length > 0,
   );
 
-  defaultColDef = {
+  defaultColDef: ColDef = {
     suppressKeyboardEvent,
   };
 
-  columnDefs: ColDef[] = [
-    { field: 'group', cellRenderer: 'agGroupCellRenderer', flex: 0.1 },
+  onRowClicked = (param: RowClickedEvent<EmployeeData>) => {
+    if (param.data?.status !== 'BeingAdded' && param.data?.status !== 'Added')
+      param.node.setExpanded(!param.node.expanded);
+  };
+
+  columnDefs2: MyColDef[] = [
+    { field: 'group', canEdit: false, cellRenderer: 'agGroupCellRenderer', flex: 0.1 },
     {
       field: 'EmployeeID',
+      canEdit: true,
       cellRendererSelector: (params) => ({
         ...this.inputCellRenderer<number>(params),
         params: {
@@ -99,6 +110,7 @@ export class EmployeeComponent {
     },
     {
       field: 'FirstName',
+      canEdit: true,
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
@@ -110,6 +122,7 @@ export class EmployeeComponent {
     },
     {
       field: 'LastName',
+      canEdit: true,
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
@@ -120,6 +133,7 @@ export class EmployeeComponent {
     },
     {
       field: 'Department',
+      canEdit: true,
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         component: this.selectCellRenderer<string>(params),
         params: {
@@ -133,6 +147,7 @@ export class EmployeeComponent {
     },
     {
       field: 'Salary',
+      canEdit: true,
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
@@ -143,6 +158,7 @@ export class EmployeeComponent {
     },
     {
       field: 'Actions',
+      canEdit: false,
       cellRenderer: ActionCellRenderer<EmployeeData>,
       cellRendererParams: {
         deleteCallback: (_, row) => this.deleteRowCallback(row),
@@ -162,6 +178,19 @@ export class EmployeeComponent {
     });
   }
 
+  columnDefs: ColDef[] = this.columnDefs2;
+
+  onCellDoubleClicked(event: CellDoubleClickedEvent<EmployeeData>) {
+    const curentCol = event.column.getColId();
+    const data = event.data;
+    const colDef = this.columnDefs2.find((col) => col.field === curentCol);
+
+    if (data && data.status !== 'BeingAdded' && colDef?.canEdit && this.hasChanges()) {
+      event.node.setData({ ...data, status: 'BeingEdited' });
+      this.rowEditingStarted({ ...data, status: 'BeingEdited' });
+    }
+  }
+
   getRowId(data: GetRowIdParams<EmployeeData>) {
     return data.data.EmployeeID.toString();
   }
@@ -169,6 +198,7 @@ export class EmployeeComponent {
   onGridReady(event: GridReadyEvent) {
     this.api = event.api;
     this.api?.setGridOption('serverSideDatasource', this.serverSideDatasource());
+    // this.api?.setGridOption('onRowClicked', this.onRowClicked);
   }
 
   addNewRow() {

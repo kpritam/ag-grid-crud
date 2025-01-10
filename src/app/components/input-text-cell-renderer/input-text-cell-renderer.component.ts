@@ -11,6 +11,7 @@ export interface InputTextCellRendererParams<TData extends { status?: RowStatus 
   placeholder?: string;
   required?: boolean;
   keypressCallback?: (event: KeyboardEvent) => void;
+  type?: 'number' | 'text' | 'checkbox';
 }
 
 @Component({
@@ -54,4 +55,5 @@ export class InputTextCellRendererComponent<TData extends { status?: RowStatus }
       this.params.node.setDataValue(this.params.column?.getColId(), this.inputValue);
     }
   }
+
 }
