@@ -1,4 +1,4 @@
-@if(params) {
+@if(params && params.formControl) {
   <mat-form-field class="input"
     [ngClass]="{
       'row-being-added': params.data?.status === 'BeingAdded',

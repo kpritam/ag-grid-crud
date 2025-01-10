@@ -1,19 +1,21 @@
-<mat-form-field
-  class="ag-input-cell"
-  [ngClass]="{ 'row-being-added': params.data?.status === 'BeingAdded' }"
-  appearance="outline"
-  subscriptSizing="dynamic"
->
-  <input
-    (blur)="onBlur()"
-    matInput
-    [formControl]="params.formControl"
-    [placeholder]="params.placeholder || ''"
-    [required]="!!params.required"
-    [type]="params.type || 'text'"
-  />
+@if(params.formControl) {
+  <mat-form-field
+    class="ag-input-cell"
+    [ngClass]="{ 'row-being-added': params.data?.status === 'BeingAdded' }"
+    appearance="outline"
+    subscriptSizing="dynamic"
+  >
+    <input
+      (blur)="onBlur()"
+      matInput
+      [formControl]="params.formControl"
+      [placeholder]="params.placeholder || ''"
+      [required]="!!params.required"
+      [type]="params.type || 'text'"
+    />
 
-  @if (params.formControl.hasError("required")) {
-    <mat-error>Required</mat-error>
-  }
-</mat-form-field>
+    @if (params.formControl.hasError("required")) {
+      <mat-error>Required</mat-error>
+    }
+  </mat-form-field>
+}

@@ -36,7 +36,7 @@ import {
   SelectCellRenderer,
   SelectCellRendererParams,
 } from '../select-cell-renderer/select-cell-renderer.component';
-import { Validators, FormBuilder } from '@angular/forms';
+import { Validators, FormBuilder, FormGroup } from '@angular/forms';
 
 registerAgGridModules();
 
@@ -69,14 +69,7 @@ export class EmployeeComponent {
   rowModelType: RowModelType = 'serverSide';
 
   private fb: FormBuilder = new FormBuilder();
-
-  rowForm = this.fb.group({
-    empId: [0, Validators.required],
-    firsName: ['', Validators.required],
-    lastName: [''],
-    department: ['', Validators.required],
-    salary: [0],
-  });
+  private rowFormsMap: Map<number, FormGroup> = new Map();
 
   hasChanges = computed(
     () =>
@@ -106,11 +99,13 @@ export class EmployeeComponent {
     {
       field: 'EmployeeID',
       canEdit: true,
-      cellRendererSelector: (params) => ({
+      cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<number>(params),
         params: {
-          formControl: this.rowForm.controls.empId,
-          initialValue: params.data.EmployeeID,
+          formControl: params.data?.EmployeeID
+            ? this.getFormControl(params.data.EmployeeID, 'empId')
+            : undefined,
+          initialValue: params.data?.EmployeeID,
           placeholder: 'Emp Id',
           required: true,
         } as InputCellParams<EmployeeData, number>,
@@ -122,7 +117,9 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
-          formControl: this.rowForm.controls.firsName,
+          formControl: params.data?.EmployeeID
+            ? this.getFormControl(params.data.EmployeeID, 'firstName')
+            : undefined,
           initialValue: params.data?.FirstName,
           placeholder: 'First',
           required: true,
@@ -135,7 +132,9 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
-          formControl: this.rowForm.controls.lastName,
+          formControl: params.data?.EmployeeID
+            ? this.getFormControl(params.data.EmployeeID, 'lastName')
+            : undefined,
           initialValue: params.data?.LastName,
           placeholder: 'Last',
         } as InputCellParams<EmployeeData, string>,
@@ -147,7 +146,9 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         component: this.selectCellRenderer<string>(params),
         params: {
-          formControl: this.rowForm.controls.department,
+          formControl: params.data?.EmployeeID
+            ? this.getFormControl(params.data.EmployeeID, 'department')
+            : undefined,
           ...params,
           initialValue: params.data?.Department,
           placeholder: 'Department',
@@ -162,7 +163,9 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
-          formControl: this.rowForm.controls.salary,
+          formControl: params.data?.EmployeeID
+            ? this.getFormControl(params.data.EmployeeID, 'salary')
+            : undefined,
           initialValue: params.data?.Salary,
           placeholder: 'Salary',
         } as InputCellParams<EmployeeData, number>,
@@ -198,6 +201,7 @@ export class EmployeeComponent {
     const colDef = this.editColumnDefs.find((col) => col.field === curentCol);
 
     if (data && data.status !== 'BeingAdded' && colDef?.canEdit && this.hasChanges()) {
+      this.addFormGroup(data.EmployeeID);
       event.node.setData({ ...data, status: 'BeingEdited' });
       this.rowEditingStarted({ ...data, status: 'BeingEdited' });
     }
@@ -219,12 +223,12 @@ export class EmployeeComponent {
     }
 
     const id = Math.floor(Math.random() * 10000000);
+    this.addFormGroup(id);
+
     const newRow = { ...EMPTY_EMPLOYEE, EmployeeID: id };
     this.rowBeingAdded.set(newRow);
 
     this.api?.applyServerSideTransaction({ addIndex: 0, add: [newRow] });
-    this.api?.getDisplayedRowAtIndex(0)?.setRowHeight(72);
-    this.api?.onRowHeightChanged();
   }
 
   deleteRowCallback = (data: EmployeeData) => {
@@ -260,6 +264,7 @@ export class EmployeeComponent {
   };
 
   rowEditingStarted = (data: EmployeeData) => {
+    this.addFormGroup(data.EmployeeID);
     return this.editedRows.update((rows) =>
       rows
         .filter((row) => row.updated.EmployeeID !== data.EmployeeID)
@@ -285,8 +290,9 @@ export class EmployeeComponent {
     const keyboardEvent = event.event as KeyboardEvent;
 
     if (keyboardEvent.key === 'Enter' && this.hasChanges()) {
-      if (!this.rowForm.valid) {
-        this.rowForm.markAllAsTouched();
+      const formGroup = this.getFormGroup(event.data!.EmployeeID);
+      if (!formGroup.valid) {
+        formGroup.markAllAsTouched();
         return;
       }
 
@@ -316,10 +322,7 @@ export class EmployeeComponent {
           this.rowEditingStopped(changedData);
         }
 
-        changedNode?.setRowHeight(42);
-        this.api?.onRowHeightChanged();
-
-        this.rowForm.reset();
+        formGroup.reset();
       }
     }
   }
@@ -441,7 +444,27 @@ export class EmployeeComponent {
     this.editedRows.set([]);
     this.deletedSkills.set({});
     this.rowBeingAdded.set(null);
+    this.rowFormsMap.clear();
   };
+
+  private addFormGroup(employeeId: number) {
+    const formGroup = this.fb.group({
+      empId: [0, Validators.required],
+      firstName: ['', Validators.required],
+      lastName: [''],
+      department: ['', Validators.required],
+      salary: [0],
+    });
+    this.rowFormsMap.set(employeeId, formGroup);
+  }
+
+  private getFormGroup(employeeId: number): FormGroup {
+    return this.rowFormsMap.get(employeeId) || this.fb.group({});
+  }
+
+  private getFormControl(employeeId: number, controlName: string) {
+    return this.getFormGroup(employeeId).controls[controlName];
+  }
 
   inputCellRenderer<TValue>(params: ICellRendererParams<EmployeeData>) {
     return params.data?.status === 'BeingAdded' || params.data?.status === 'BeingEdited'

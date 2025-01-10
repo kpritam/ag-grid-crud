@@ -69,8 +69,8 @@ export class ActionCellRenderer<TData extends { status?: RowStatus }>
 
     if (data) {
       const rowBeingEdited = { ...data, status: 'BeingEdited' };
-      this.params?.node.setData(rowBeingEdited);
       this.params?.rowEditingStarted(this.params.context, rowBeingEdited);
+      this.params?.node.setData(rowBeingEdited);
     }
   }
 

@@ -9,7 +9,7 @@ import { AgGridModule, ICellRendererAngularComp } from 'ag-grid-angular';
 
 export interface InputCellParams<TData extends { status?: RowStatus }, TValue>
   extends ICellRendererParams<TData, TValue> {
-  formControl: FormControl<TValue | undefined>;
+  formControl?: FormControl<TValue | undefined>;
   initialValue?: TValue;
   placeholder?: string;
   required?: boolean;
@@ -39,7 +39,7 @@ export class InputCellComponent<TData extends { status?: RowStatus }, TValue>
 
   agInit(params: InputCellParams<TData, TValue>): void {
     this.params = params;
-    this.params.formControl.setValue(this.params.value ?? this.params.initialValue);
+    this.params.formControl?.setValue(this.params.value ?? this.params.initialValue);
   }
 
   refresh(params: InputCellParams<TData, TValue>): boolean {
@@ -52,9 +52,9 @@ export class InputCellComponent<TData extends { status?: RowStatus }, TValue>
   }
 
   onInputChange() {
-    if (this.params.formControl.value !== this.params.value && this.params.column?.getColId()) {
-      this.params.node.setDataValue(this.params.column?.getColId(), this.params.formControl.value);
-      this.params?.setValue?.(this.params.formControl.value);
+    if (this.params.formControl?.value !== this.params.value && this.params.column?.getColId()) {
+      this.params.node.setDataValue(this.params.column?.getColId(), this.params.formControl?.value);
+      this.params?.setValue?.(this.params.formControl?.value);
     }
   }
 }
