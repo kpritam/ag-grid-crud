@@ -36,11 +36,11 @@ import {
   SelectCellRenderer,
   SelectCellRendererParams,
 } from '../select-cell-renderer/select-cell-renderer.component';
-import { FormGroup, FormControl, Validators, FormBuilder } from '@angular/forms';
+import { Validators, FormBuilder } from '@angular/forms';
 
 registerAgGridModules();
 
-type MyColDef = ColDef & { canEdit: boolean };
+type EditColDef = ColDef & { canEdit: boolean };
 
 const ROW_COLORS = {
   BEING_ADDED: '#F6F8FA',
@@ -71,11 +71,11 @@ export class EmployeeComponent {
   private fb: FormBuilder = new FormBuilder();
 
   rowForm = this.fb.group({
-    empId: [undefined, Validators.required],
-    firsName: [undefined, Validators.required],
-    lastName: [undefined],
-    department: [undefined, Validators.required],
-    salary: [undefined],
+    empId: [0, Validators.required],
+    firsName: ['', Validators.required],
+    lastName: [''],
+    department: ['', Validators.required],
+    salary: [0],
   });
 
   hasChanges = computed(
@@ -101,7 +101,7 @@ export class EmployeeComponent {
       param.node.setExpanded(!param.node.expanded);
   };
 
-  columnDefs2: MyColDef[] = [
+  editColumnDefs: EditColDef[] = [
     { field: 'group', canEdit: false, cellRenderer: 'agGroupCellRenderer', flex: 0.1 },
     {
       field: 'EmployeeID',
@@ -182,8 +182,6 @@ export class EmployeeComponent {
   ];
 
   constructor() {
-    this.rowForm.controls.empId;
-
     effect(() => {
       console.info('Edited Rows', this.editedRows());
     });
@@ -192,12 +190,12 @@ export class EmployeeComponent {
     });
   }
 
-  columnDefs: ColDef[] = this.columnDefs2;
+  columnDefs: ColDef[] = this.editColumnDefs;
 
   onCellDoubleClicked(event: CellDoubleClickedEvent<EmployeeData>) {
     const curentCol = event.column.getColId();
     const data = event.data;
-    const colDef = this.columnDefs2.find((col) => col.field === curentCol);
+    const colDef = this.editColumnDefs.find((col) => col.field === curentCol);
 
     if (data && data.status !== 'BeingAdded' && colDef?.canEdit && this.hasChanges()) {
       event.node.setData({ ...data, status: 'BeingEdited' });
