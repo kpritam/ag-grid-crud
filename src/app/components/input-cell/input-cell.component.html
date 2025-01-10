@@ -7,13 +7,13 @@
   <input
     (blur)="onBlur()"
     matInput
-    [formControl]="formControl"
+    [formControl]="params.formControl"
     [placeholder]="params.placeholder || ''"
     [required]="!!params.required"
     [type]="params.type || 'text'"
   />
 
-  @if (formControl.hasError("required")) {
+  @if (params.formControl.hasError("required")) {
     <mat-error>Required</mat-error>
   }
 </mat-form-field>

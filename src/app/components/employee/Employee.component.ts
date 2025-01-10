@@ -17,7 +17,6 @@ import {
   IRowNode,
   CellDoubleClickedEvent,
   RowClickedEvent,
-  CellClickedEvent,
 } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { MatButtonModule } from '@angular/material/button';
@@ -31,15 +30,13 @@ import {
 import { registerAgGridModules } from '../../ag-grid-module-register';
 import { EmployeeData, RowStatus, Skill } from '../../api/employee';
 import { EMPLOYEES, EMPTY_EMPLOYEE } from '../../api/data';
-import {
-  InputCellComponent,
-  InputCellParams,
-} from '../input-cell/input-cell.component';
+import { InputCellComponent, InputCellParams } from '../input-cell/input-cell.component';
 import { suppressKeyboardEvent } from '../../utils/ag-keypress';
 import {
   SelectCellRenderer,
   SelectCellRendererParams,
 } from '../select-cell-renderer/select-cell-renderer.component';
+import { FormGroup, FormControl } from '@angular/forms';
 
 registerAgGridModules();
 
@@ -70,6 +67,14 @@ export class EmployeeComponent {
   editedRows = signal<EditedRow[]>([]);
   deletedSkills = signal<Record<number, Skill[]>>({});
   rowModelType: RowModelType = 'serverSide';
+
+  rowForm = new FormGroup({
+    empId: new FormControl<number | undefined>(undefined),
+    firsName: new FormControl<string | undefined>(undefined),
+    lastName: new FormControl<string | undefined>(undefined),
+    department: new FormControl<string | undefined>(undefined),
+    salary: new FormControl<number | undefined>(undefined),
+  });
 
   hasChanges = computed(
     () =>
@@ -102,6 +107,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params) => ({
         ...this.inputCellRenderer<number>(params),
         params: {
+          formControl: this.rowForm.get('empId') as FormControl<number>,
           initialValue: params.data.EmployeeID,
           placeholder: 'Emp Id',
           required: true,
@@ -114,6 +120,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
+          formControl: this.rowForm.get('firsName') as FormControl<string>,
           initialValue: params.data?.FirstName,
           placeholder: 'First',
           required: true,
@@ -126,6 +133,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
+          formControl: this.rowForm.get('lastName') as FormControl<string>,
           initialValue: params.data?.LastName,
           placeholder: 'Last',
         } as InputCellParams<EmployeeData, string>,
@@ -137,6 +145,7 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         component: this.selectCellRenderer<string>(params),
         params: {
+          formControl: this.rowForm.get('department') as FormControl<string>,
           ...params,
           initialValue: params.data?.Department,
           placeholder: 'Department',
@@ -151,9 +160,10 @@ export class EmployeeComponent {
       cellRendererSelector: (params: ICellRendererParams<EmployeeData>) => ({
         ...this.inputCellRenderer<string>(params),
         params: {
+          formControl: this.rowForm.get('salary') as FormControl<number>,
           initialValue: params.data?.Salary,
           placeholder: 'Salary',
-        } as InputCellParams<EmployeeData, string>,
+        } as InputCellParams<EmployeeData, number>,
       }),
     },
     {
@@ -273,6 +283,11 @@ export class EmployeeComponent {
     const keyboardEvent = event.event as KeyboardEvent;
 
     if (keyboardEvent.key === 'Enter' && this.hasChanges()) {
+      if (!this.rowForm.valid) {
+        this.rowForm.markAllAsTouched();
+        return;
+      }
+
       const changedRow = event.data;
 
       if (changedRow) {
@@ -301,6 +316,8 @@ export class EmployeeComponent {
 
         changedNode?.setRowHeight(42);
         this.api?.onRowHeightChanged();
+
+        this.rowForm.reset();
       }
     }
   }

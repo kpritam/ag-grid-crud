@@ -14,6 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 export interface SelectCellRendererParams<TData extends { status?: RowStatus }, TValue>
   extends ICellRendererParams<TData, TValue> {
+  formControl: FormControl<TValue | undefined>;
   initialValue?: TValue;
   placeholder?: string;
   options: TValue[];
@@ -45,7 +46,6 @@ export class SelectCellRenderer<
 {
   protected params?: SelectCellRendererParams<TData, TValue>;
 
-  protected selectCtrl: FormControl<TValue | null> = new FormControl<TValue | null>(null);
   protected searchFilterCtrl: FormControl<string> = new FormControl<string>('', {
     nonNullable: true,
   });
@@ -57,7 +57,7 @@ export class SelectCellRenderer<
   agInit(params: SelectCellRendererParams<TData, TValue>): void {
     this.params = params;
 
-    if (this.params.value) this.selectCtrl.setValue(this.params.value);
+    if (this.params.value) this.params.formControl.setValue(this.params.value);
 
     this.filteredOptions.next(this.params.options.slice());
 
@@ -65,7 +65,7 @@ export class SelectCellRenderer<
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.filterOptions());
 
-    this.selectCtrl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+    this.params.formControl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
       this.params?.setValue?.(value);
     });
   }

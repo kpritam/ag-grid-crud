@@ -1,26 +1,28 @@
-<mat-form-field class="input"
-  [ngClass]="{
-    'row-being-added': params?.data?.status === 'BeingAdded',
-    'invalid-input': params?.required && !params?.value
-  }"
-  appearance="outline" subscriptSizing="dynamic">
+@if(params) {
+  <mat-form-field class="input"
+    [ngClass]="{
+      'row-being-added': params.data?.status === 'BeingAdded',
+      'invalid-input': params.required && !params.value
+    }"
+    appearance="outline" subscriptSizing="dynamic">
 
-  @if(!params?.value) {
-    <mat-label>{{params?.placeholder}}</mat-label>
-  }
-
-  <mat-select class="select" [formControl]="selectCtrl" required>
-    <mat-option>
-      <ngx-mat-select-search class="search-option" [formControl]="searchFilterCtrl" noEntriesFoundLabel="No Match" placeholderLabel="Search">
-      </ngx-mat-select-search>
-    </mat-option>
-
-    @for (option of filteredOptions | async; track option) {
-      <mat-option [value]="option">{{option}}</mat-option>
+    @if(!params.value) {
+      <mat-label>{{params.placeholder}}</mat-label>
     }
-  </mat-select>
 
-  @if (selectCtrl.hasError("required")) {
-    <mat-error>Required</mat-error>
-  }
-</mat-form-field>
+    <mat-select class="select" [formControl]="params.formControl" required>
+      <mat-option>
+        <ngx-mat-select-search class="search-option" [formControl]="searchFilterCtrl" noEntriesFoundLabel="No Match" placeholderLabel="Search">
+        </ngx-mat-select-search>
+      </mat-option>
+
+      @for (option of filteredOptions | async; track option) {
+        <mat-option [value]="option">{{option}}</mat-option>
+      }
+    </mat-select>
+
+    @if (params.formControl.hasError("required")) {
+      <mat-error>Required</mat-error>
+    }
+  </mat-form-field>
+}
