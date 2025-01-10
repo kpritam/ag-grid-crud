@@ -18,9 +18,9 @@
     @for (option of filteredOptions | async; track option) {
       <mat-option [value]="option">{{option}}</mat-option>
     }
-
-    @if (selectCtrl.hasError("required")) {
-      <mat-error>Required</mat-error>
-    }
   </mat-select>
+
+  @if (selectCtrl.hasError("required")) {
+    <mat-error>Required</mat-error>
+  }
 </mat-form-field>

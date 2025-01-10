@@ -32,9 +32,9 @@ import { registerAgGridModules } from '../../ag-grid-module-register';
 import { EmployeeData, RowStatus, Skill } from '../../api/employee';
 import { EMPLOYEES, EMPTY_EMPLOYEE } from '../../api/data';
 import {
-  InputTextCellRendererComponent,
-  InputTextCellRendererParams,
-} from '../input-text-cell-renderer/input-text-cell-renderer.component';
+  InputCellComponent,
+  InputCellParams,
+} from '../input-cell/input-cell.component';
 import { suppressKeyboardEvent } from '../../utils/ag-keypress';
 import {
   SelectCellRenderer,
@@ -105,7 +105,7 @@ export class EmployeeComponent {
           initialValue: params.data.EmployeeID,
           placeholder: 'Emp Id',
           required: true,
-        } as InputTextCellRendererParams<EmployeeData, number>,
+        } as InputCellParams<EmployeeData, number>,
       }),
     },
     {
@@ -117,7 +117,7 @@ export class EmployeeComponent {
           initialValue: params.data?.FirstName,
           placeholder: 'First',
           required: true,
-        } as InputTextCellRendererParams<EmployeeData, string>,
+        } as InputCellParams<EmployeeData, string>,
       }),
     },
     {
@@ -128,7 +128,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data?.LastName,
           placeholder: 'Last',
-        } as InputTextCellRendererParams<EmployeeData, string>,
+        } as InputCellParams<EmployeeData, string>,
       }),
     },
     {
@@ -153,7 +153,7 @@ export class EmployeeComponent {
         params: {
           initialValue: params.data?.Salary,
           placeholder: 'Salary',
-        } as InputTextCellRendererParams<EmployeeData, string>,
+        } as InputCellParams<EmployeeData, string>,
       }),
     },
     {
@@ -426,7 +426,7 @@ export class EmployeeComponent {
 
   inputCellRenderer<TValue>(params: ICellRendererParams<EmployeeData>) {
     return params.data?.status === 'BeingAdded' || params.data?.status === 'BeingEdited'
-      ? { component: InputTextCellRendererComponent<EmployeeData, TValue> }
+      ? { component: InputCellComponent<EmployeeData, TValue> }
       : undefined;
   }
 

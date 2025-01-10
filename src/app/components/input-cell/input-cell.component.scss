@@ -1,0 +1,21 @@
+@use "@angular/material" as mat;
+
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+
+  .ag-input-cell {
+    height: 33.25px;
+    background-color: #fff;
+  }
+
+  @include mat.form-field-overrides(
+    (
+      container-height: 33.25px,
+      container-vertical-padding: 4px,
+      container-text-size: 14px,
+    )
+  );
+}
