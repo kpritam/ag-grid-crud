@@ -1,0 +1,55 @@
+<div
+  class="mat-subtitle-2 notification"
+  [attr.data-test-id]="'notification__container'"
+  [ngClass]="{
+    success: notificationData.type === 'success',
+    warn: notificationData.type === 'warn',
+    alert: notificationData.type === 'alert',
+    info: notificationData.type === 'info',
+  }"
+>
+  <div fxFlex="100" fxLayout="row" fxLayoutAlign="center start">
+    <span class="message-icon">
+      <mat-icon
+        class="icon-success"
+        *ngIf="notificationData.type === 'success'"
+        [attr.data-test-id]="'notification__success-icon'"
+        >check_circle_outline</mat-icon
+      >
+      <mat-icon
+        class="icon-warn"
+        *ngIf="notificationData.type === 'warn'"
+        [attr.data-test-id]="'notification__warn-icon'"
+        >warning_amber_outline</mat-icon
+      >
+      <mat-icon
+        class="icon-alert"
+        *ngIf="notificationData.type === 'alert'"
+        [attr.data-test-id]="'notification__alert-icon'"
+        >error_outline</mat-icon
+      >
+    </span>
+    <div class="notification-component-text">
+      <span class="mat-body-2" [attr.data-test-id]="'notification__title'">
+        <strong>
+          {{ notificationData.title }}
+        </strong>
+      </span>
+      <div
+        class="notification-message"
+        [attr.data-test-id]="'notification__message'"
+        [innerHTML]="notificationData.message"
+      ></div>
+    </div>
+    <span fxFlex></span>
+    <span class="close-container">
+      <mat-icon
+        class="close-icon"
+        (click)="dismiss()"
+        [attr.data-test-id]="'notification__close-icon'"
+      >
+        close
+      </mat-icon>
+    </span>
+  </div>
+</div>
