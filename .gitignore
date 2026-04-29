@@ -40,3 +40,32 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# BEGIN grimoire
+# Runtime state produced by Grimoire — commit .grimoire/seal.json so every
+# teammate / CI agrees on what's already documented, but keep progress
+# checkpoints and agent logs out of history.
+.grimoire/progress.json
+.grimoire/logs/
+.grimoire/cache/
+.grimoire-progress.json
+
+# Design skill installs (regenerated on every `grimoire cast`).
+# These specific subtrees are owned by the upstream `npx skills add`
+# CLI (vercel-labs/skills) — never hand-edit, never commit. The parent
+# `<host>/skills/` directories stay tracked so any skills you author
+# yourself remain in git history.
+.agents/skills/ui-ux-pro-max/
+.agents/skills/impeccable/
+.claude/skills/ui-ux-pro-max/
+.claude/skills/impeccable/
+.codex/skills/ui-ux-pro-max/
+.codex/skills/impeccable/
+.opencode/skills/ui-ux-pro-max/
+.opencode/skills/impeccable/
+.copilot/skills/ui-ux-pro-max/
+.copilot/skills/impeccable/
+.github/copilot/skills/ui-ux-pro-max/
+.github/copilot/skills/impeccable/
+skills-lock.json
+# END grimoire
