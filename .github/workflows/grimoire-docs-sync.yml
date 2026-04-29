@@ -52,7 +52,7 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g '@anthropic-ai/claude-code@^2'
 
-      - uses: kpritam/grimoire@0.1.3
+      - uses: kpritam/grimoire@v0.1.3
         with:
           provider: claude-code
           mode: ${{ inputs.mode || 'auto' }}
