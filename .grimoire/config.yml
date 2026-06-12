@@ -1,0 +1,47 @@
+# Grimoire configuration — https://github.com/kpritam/grimoire
+# Lives at .grimoire/config.yml; siblings `seal.json` and
+# `progress.json` share the `.grimoire/` folder so the repo root stays clean.
+# Tune providers, site framework, seals, and publishing targets.
+# ------------------------------------------------------------------
+
+version: 1
+provider:
+  id: claude
+  options:
+    model: claude-sonnet-4-6
+output: ./tome
+format: markdown
+site:
+  framework: docusaurus
+  diagrams: mermaid
+prompts:
+  system: default
+  context: ""
+tracking:
+  sha-file: .grimoire/seal.json
+  auto-seal: true
+  progress-file: .grimoire/progress.json
+concurrency:
+  retries: 1
+  resume: false
+publish:
+  github-pages: false
+logging:
+  stream-agent: tty
+  level: info
+skills:
+  install:
+    - source: nextlevelbuilder/ui-ux-pro-max-skill
+      directive:
+        tag: skill id="ui-ux-pro-max"
+        body: "Use ui-ux-pro-max for design-system synthesis. Read SKILL.md on demand. Claims lanes: palette, atmosphere,
+          layout, responsive recipe."
+    - source: pbakaus/impeccable
+      directive:
+        tag: skill id="impeccable"
+        body: "Use impeccable for register-aware design language. Claims lanes: typography, type scale, font loading."
+index:
+  enabled: true
+  out-dir: ./tome/site/static/grimoire-index
+  model: Snowflake/snowflake-arctic-embed-xs
+  exclude: []
